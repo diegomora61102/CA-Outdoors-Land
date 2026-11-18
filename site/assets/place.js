@@ -97,14 +97,15 @@
   $('pActions').innerHTML = acts.join('');
 
   // Gallery + lightbox
-  const photos = o.img || [];
+  const photos = CFG.showPhotos ? (o.img || []) : [];
   window.__photoGone = (img) => {   // a photo that fails to load is removed; with none left, say so
     const b = img.closest('button'); if (b) b.remove();
     const g = document.getElementById('gallery');
     if (!g.querySelector('button')) { g.className = 'gallery none'; g.textContent = 'Photos for this place couldn\'t load right now.'; }
   };
   const g = $('gallery');
-  if (!photos.length) { g.className = 'gallery none'; g.innerHTML = 'No photos of this place yet.' + (kind === 'fc' && o.fid ? ' Recreation.gov photos are added in the monthly update.' : ''); }
+  if (!CFG.showPhotos) { g.hidden = true; }
+  else if (!photos.length) { g.className = 'gallery none'; g.innerHTML = 'No photos of this place yet.' + (kind === 'fc' && o.fid ? ' Recreation.gov photos are added in the monthly update.' : ''); }
   else {
     g.className = 'gallery n' + Math.min(photos.length, 5);
     g.innerHTML = photos.slice(0, 5).map((u, i) => `<button type="button" data-i="${i}" aria-label="Open photo ${i + 1} of ${photos.length}"><img src="${esc(u)}" alt="${i ? '' : 'Photo of ' + esc(o.n)}" loading="${i ? 'lazy' : 'eager'}" onerror="window.__photoGone(this)">${i === 4 && photos.length > 5 ? `<span class="more-ph">+${photos.length - 5} more</span>` : ''}</button>`).join('');

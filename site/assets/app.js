@@ -1,5 +1,6 @@
 (async function () {
   const CFG = window.APP_CONFIG || {};
+  const SHOW_PHOTOS = !!CFG.showPhotos;
   const loading = document.getElementById('loading');
   let D, RC, FS;
   try {
@@ -217,7 +218,7 @@
     return h;
   }
   let canSave = false;   // true once Supabase accounts are configured
-  const actions = (o) => `${o.img && o.img.length ? `<a class="pp-photo" href="place.html?id=${o.id}"><img src="${esc(o.th ? 'thumbs/' + o.id + '.webp' : o.img[0])}" alt="Photo of ${esc(o.n)}" loading="lazy" onerror="this.parentNode.remove()"></a>` : ''}<div class="pp-actions">${canSave ? `<button type="button" class="act fav${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}">${favs.has(o.id) ? '★ Saved' : '☆ Save'}</button>` : ''}<button type="button" class="act" data-share="${o.id}">Share</button><a class="act" href="place.html?id=${o.id}">Details${o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div>`;
+  const actions = (o) => `${SHOW_PHOTOS && o.img && o.img.length ? `<a class="pp-photo" href="place.html?id=${o.id}"><img src="${esc(o.th ? 'thumbs/' + o.id + '.webp' : o.img[0])}" alt="Photo of ${esc(o.n)}" loading="lazy" onerror="this.parentNode.remove()"></a>` : ''}<div class="pp-actions">${canSave ? `<button type="button" class="act fav${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}">${favs.has(o.id) ? '★ Saved' : '☆ Save'}</button>` : ''}<button type="button" class="act" data-share="${o.id}">Share</button><a class="act" href="place.html?id=${o.id}">Details${SHOW_PHOTOS && o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div>`;
 
   const pops = {
     ra: (o) => {
@@ -634,6 +635,7 @@
   const listEl = document.getElementById('campList'), countEl = document.getElementById('campCount'), moreBtn = document.getElementById('campMore');
   const fOpen = document.getElementById('f-open'), fWater = document.getElementById('f-water'), fRes = document.getElementById('f-res'), fPhoto = document.getElementById('f-photo');
   let listLimit = 40;
+  if (!SHOW_PHOTOS) { fPhoto.checked = false; fPhoto.closest('label').hidden = true; }
   const statusOf = (o) => (STATUS && STATUS.s[o.id]) || o.st || '';
   const agencyOf = (v) => v.k === 'fc' ? v.o.forest : v.k === 'nc' ? (v.o.park || 'National Park') : 'Bureau of Land Management';
   function campsInView() {
@@ -662,7 +664,7 @@
     if (favs.has(o.id)) tags.push('<span class="tag ok">★ Saved</span>');
     const src = o.th ? `thumbs/${o.id}.webp` : o.img && o.img.length ? o.img[0] : '';
     const img = src ? `<img src="${esc(src)}" alt=""" loading="lazy" onerror="this.outerHTML='<span class=&quot;ph&quot;>${phSvg.replace(/"/g, '&quot;')}No photo</span>'">` : `<span class="ph">${phSvg}No photo yet</span>`;
-    return `<li class="camp-card" data-id="${o.id}" tabindex="-1"><div class="thumb">${img}</div><div><h3>${esc(o.n)}</h3><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button><a href="place.html?id=${o.id}">Details${o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div></div></li>`;
+    return `<li class="camp-card${SHOW_PHOTOS ? '' : ' nophoto'}" data-id="${o.id}" tabindex="-1">${SHOW_PHOTOS ? `<div class="thumb">${img}</div>` : ''}<div><h3>${esc(o.n)}</h3><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button><a href="place.html?id=${o.id}">Details${SHOW_PHOTOS && o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div></div></li>`;
   }
   function renderList() {
     if (!listEl) return;

@@ -17,13 +17,17 @@ jobs:
         run: python3 -I pipeline/sources.py raw
       - name: Build the map data
         run: python3 -I pipeline/build_data.py raw site/data
+      # Photos are on hold: set the repository variable PHOTOS to 'on' (Settings -> Secrets and variables -> Actions -> Variables) to turn them on.
       - name: Install image tools
+        if: ${{ vars.PHOTOS == 'on' }}
         run: pip install pillow==11.0.0
       - name: Photos and thumbnails (Forest Service pages; Recreation.gov once RIDB_API_KEY is set)
+        if: ${{ vars.PHOTOS == 'on' }}
         env:
           RIDB_API_KEY: ${{ secrets.RIDB_API_KEY }}
         run: python3 -I pipeline/photos.py
       - name: Rebuild with photos
+        if: ${{ vars.PHOTOS == 'on' }}
         run: python3 -I pipeline/build_data.py raw site/data
       - name: Sync weather sites (new pins get an NWS grid cell)
         run: python3 -I pipeline/wx_sites.py --stations

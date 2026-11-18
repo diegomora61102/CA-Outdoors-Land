@@ -426,3 +426,6 @@ a.act { text-decoration: none; display: inline-block; }
   .left .tabpanel { max-height: 72vh; overflow-y: auto; }
   .right { max-height: 80vh; overflow-y: auto; }
 }
+
+.camp-card.nophoto { grid-template-columns: 1fr; padding: 10px 12px; }
+.chip-f[hidden] { display: none; }

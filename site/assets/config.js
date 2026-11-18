@@ -3,5 +3,6 @@
 window.APP_CONFIG = {
   supabaseUrl: 'https://jkofqhhyimfuidxrvjcn.supabase.co',
   supabaseAnonKey: 'sb_publishable_gaBERIFx4Greu75xZ8wP1Q_C8JYSYxB',   // publishable (public) key
-  googleSignIn: false     // set true after enabling Google under Authentication -> Providers
+  googleSignIn: false,    // set true after enabling Google under Authentication -> Providers
+  showPhotos: false       // photos in the campground list, popups and campground pages (on hold for now)
 };
