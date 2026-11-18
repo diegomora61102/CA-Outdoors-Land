@@ -1,0 +1,19 @@
+name: Closures and alerts (hourly)
+on:
+  schedule:
+    - cron: '37 * * * *'       # every hour at :37 (UTC)
+  workflow_dispatch:
+concurrency: { group: alerts, cancel-in-progress: true }
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Check temporary closures, wildfires and NWS alerts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 -I pipeline/alerts.py

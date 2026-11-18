@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CA Outdoors Land</title>
+<meta name="description" content="Map of California public land with campgrounds, trailheads, amenities, closures, wildfire and weather alerts, and hourly weather.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="map" role="application" aria-label="Map of public land, campgrounds and trails in California"></div>
+<div class="loading" id="loading" role="status">Loading the map…</div>
+
+<aside class="panel" id="panel">
+  <header>
+    <div class="eyebrow"><span class="chip"></span>Public land · campgrounds · trails · weather<button type="button" class="acct" id="acctBtn">Sign in</button></div>
+    <h1>CA Outdoors Land</h1>
+    <button class="sheet-toggle" id="sheetToggle" aria-expanded="true" aria-controls="panelBody">Layers</button>
+    <p class="lede">BLM, National Forest and National Park land in California, with campgrounds, trailheads and trails. Click a pin for details and reservation links, or anywhere else to check who manages the land.</p>
+  </header>
+  <div class="scroll" id="panelBody">
+    <div class="alert-sum" id="alertSum" hidden></div>
+    <section id="sharedList" hidden>
+      <h2>Shared list: <span id="sharedName"></span></h2>
+      <ul class="units" id="sharedItems"></ul>
+    </section>
+    <section id="mine" hidden>
+      <h2>My places (<span id="mineCount">0</span>)</h2>
+      <ul class="units" id="mineList"></ul>
+      <div class="share-row"><input class="search" id="listName" type="text" placeholder="List name (optional)" aria-label="Name for your shared list"><button type="button" class="btn" id="shareList">Share my list</button></div>
+    </section>
+    <section>
+      <h2>Hiking &amp; camping</h2>
+      <div class="layers">
+        <label class="layer"><input type="checkbox" id="lyr-ra" checked><span class="sw ra"></span><span class="lbl">Recreation areas</span><span class="cnt" id="cnt-ra"></span></label>
+        <div class="legend-sub"><b style="background:var(--hike)"></b>hiking <b style="background:var(--camp)"></b>camping <b style="background:linear-gradient(90deg, var(--hike) 50%, var(--camp) 50%)"></b>both</div>
+        <label class="layer"><input type="checkbox" id="lyr-cg" checked><span class="sw cg"></span><span class="lbl">BLM campgrounds &amp; campsites</span><span class="cnt" id="cnt-cg"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-fc" checked><span class="sw fc"></span><span class="lbl">National Forest campgrounds</span><span class="cnt" id="cnt-fc"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-th" checked><span class="sw th"></span><span class="lbl">BLM trailheads</span><span class="cnt" id="cnt-th"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-fh" checked><span class="sw fh"></span><span class="lbl">National Forest trailheads &amp; hikes</span><span class="cnt" id="cnt-fh"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-tr" checked><span class="sw tr"></span><span class="lbl">Hiking trails</span><span class="cnt" id="cnt-tr"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-vc"><span class="sw vc"></span><span class="lbl">Visitor centers &amp; ranger stations</span><span class="cnt" id="cnt-vc"></span></label>
+      </div>
+    </section>
+    <section>
+      <h2>Land</h2>
+      <div class="layers">
+        <label class="layer"><input type="checkbox" id="lyr-blm" checked><span class="sw blm"></span><span class="lbl">BLM public land</span><span class="cnt" id="cnt-blm"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-fire" checked><span class="sw fire"></span><span class="lbl">Active wildfires</span><span class="cnt" id="cnt-fire"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-nps" checked><span class="sw nps"></span><span class="lbl">National Park Service land</span><span class="cnt" id="cnt-nps"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-usfs" checked><span class="sw usfs"></span><span class="lbl">National Forest land</span><span class="cnt" id="cnt-usfs"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-nlcs" checked><span class="sw nlcs"></span><span class="lbl">Monuments &amp; conservation areas</span><span class="cnt" id="cnt-nlcs"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-wild"><span class="sw wild"></span><span class="lbl">Wilderness areas</span><span class="cnt" id="cnt-wild"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-wsa"><span class="sw wsa"></span><span class="lbl">Wilderness study areas</span><span class="cnt" id="cnt-wsa"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-fo"><span class="sw fo"></span><span class="lbl">Field office boundaries</span><span class="cnt" id="cnt-fo"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-lake" checked><span class="sw lake"></span><span class="lbl">Lakes &amp; reservoirs</span><span class="cnt" id="cnt-lake"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-hwy" checked><span class="sw hwy"></span><span class="lbl">Major highways</span><span class="cnt"></span></label>
+        <label class="layer"><input type="checkbox" id="lyr-county" checked><span class="sw county"></span><span class="lbl">County lines &amp; cities</span><span class="cnt"></span></label>
+      </div>
+      <div class="opacity"><label for="opacity">BLM fill</label><input type="range" id="opacity" min="0.15" max="1" step="0.05" value="0.75"><span id="opacityVal" class="cnt">75%</span></div>
+    </section>
+    <section>
+      <h2>Basemap</h2>
+      <div class="seg" role="group" aria-label="Basemap"><button type="button" data-base="relief">Terrain</button><button type="button" data-base="topo">Topo</button><button type="button" data-base="imagery">Satellite</button><button type="button" data-base="plain">Plain</button></div>
+    </section>
+    <section>
+      <h2 id="findHead">Find a place</h2>
+      <input class="search" id="search" type="search" placeholder="Search campgrounds, trails, wilderness…" autocomplete="off" aria-label="Search places">
+      <ul class="units" id="units"></ul>
+    </section>
+    <p class="note">Land, campground, trail and lake data comes from the BLM, USDA Forest Service and US Census and is refreshed monthly. Forest Service open/closed status is checked daily, and temporary closures, active wildfires (NIFC) and National Weather Service alerts are checked every hour. Weather updates hourly from NWS stations and forecasts: a station reading where one is close by and at a similar elevation, otherwise an estimate from nearby stations corrected for elevation. BLM doesn't publish open/closed status, and dispersed camping is allowed on most BLM land unless posted. Ownership is approximate at parcel edges; check with the managing office before you rely on it on the ground. Basemaps from the USGS National Map.</p>
+  </div>
+</aside>
+<div class="readout" id="readout">Hover the map for coordinates</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<dialog class="auth" id="authDlg" aria-labelledby="authTitle">
+  <button type="button" class="x" id="authClose" aria-label="Close">×</button>
+  <h2 id="authTitle">Sign in</h2>
+  <p id="authMsg">Get a sign-in link by email. No password needed.</p>
+  <form id="authForm">
+    <label for="authEmail">Email</label>
+    <input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com">
+    <button type="submit" class="btn" id="authSend">Email me a sign-in link</button>
+    <button type="button" class="btn alt" id="googleBtn" hidden>Continue with Google</button>
+  </form>
+  <p id="authSent" hidden><b>Check your email.</b> Open the link on this device to finish signing in.</p>
+</dialog>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

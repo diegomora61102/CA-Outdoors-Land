@@ -1,0 +1,18 @@
+name: Open/closed status (daily)
+on:
+  schedule:
+    - cron: '23 12 * * *'      # daily at 12:23 UTC (4:23 AM Pacific standard time)
+  workflow_dispatch:
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Update Forest Service open/closed status
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 -I pipeline/status.py
