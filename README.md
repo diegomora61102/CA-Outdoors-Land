@@ -46,10 +46,10 @@ Then run each workflow once by hand (**Actions → pick the workflow → Run wor
 ### 3. Cloudflare (hosting)
 `wrangler.jsonc` tells Cloudflare to serve the `site/` folder as static files.
 1. dash.cloudflare.com → **Workers & Pages → Create → Import a repository** → pick this repository.
-2. *Project name*: `ca-outdoors-land` (must match `"name"` in `wrangler.jsonc`; change one to match the other).
+2. *Project name*: `ca-outdoor-lands` (must match `"name"` in `wrangler.jsonc`; change one to match the other).
    *Build command*: leave empty. *Deploy command*: `npx wrangler deploy` (the default).
 3. Deploy. Every push (including the monthly data commit) redeploys automatically. The address is
-   `https://ca-outdoors-land.<your-subdomain>.workers.dev`; add it in Supabase under
+   `https://ca-outdoor-lands.<your-subdomain>.workers.dev`; add it in Supabase under
    **Authentication → URL Configuration** (Site URL and Redirect URLs).
 
 ### GitHub Actions minutes
