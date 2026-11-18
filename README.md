@@ -28,7 +28,7 @@ Clicking a place never calls a weather or alerts service: the jobs store results
 
 ### 1. Supabase (accounts + live data)
 1. Create a project at supabase.com.
-2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it.
+2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it, then do the same with `supabase/02_reviews.sql`.
 3. **Authentication → URL Configuration**: set *Site URL* to your website address (for example
    `https://ca-outdoors-land.pages.dev`) and add the same address under *Redirect URLs*.
 4. **Project Settings → API**: copy the *Project URL* and the *publishable* key (or legacy *anon* key) into

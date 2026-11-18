@@ -65,6 +65,20 @@ def clean(s, n=320):
   if len(s)>n: s=s[:n].rsplit(' ',1)[0].rstrip(',.;:')+'…'
   return s
 def ll(f): c=f['geometry']['coordinates']; return [round(c[1],5),round(c[0],5)]
+def imgs(h, n=6):
+  """Photo URLs embedded in a description (Forest Service media, BLM Flickr), as https, skipping icons."""
+  out=[]
+  for m in re.finditer(r'<img[^>]+src=["\u201d]?([^"\u201d\s>]+)',h or '',re.I):
+    u=H.unescape(m.group(1)).strip()
+    if u.startswith('/Internet/'): u='https://www.fs.usda.gov'+u
+    if u.startswith('/sites/blm.gov/'): u='https://www.blm.gov'+u
+    u=re.sub(r'^http://(www\.fs\.usda\.gov|farm\d\.staticflickr\.com|live\.staticflickr\.com)',r'https://\1',u)
+    if not u.startswith('https://') or re.search(r'\.(gif|svg)(\?|$)|icon|logo|spacer|arrow|pixel|button',u,re.I): continue
+    if u not in out: out.append(u)
+  return out[:n]
+PHOTOS={}
+if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),'state','photos.json')):
+  PHOTOS=json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'state','photos.json')))
 
 # ---------- Amenities: structured fields first, then wording in descriptions ----------
 def plain(*parts):
@@ -144,13 +158,13 @@ for f in load('ridb')['features']:
   elif re.search(r'campground|\bcamp\b|campsite',nm,re.I) and not re.search(r'patton|historic',nm,re.I): pk='Camp'
   elif re.search(r'spring|overlook|mine\b|arch|petroglyph|falls|lighthouse|cave|site\b|road\b|historic',nm,re.I): pk='Spot'
   else: pk='Area'
-  sites.append({'pk':pk,'am':amen(plain(p['RecAreaDescription'],p['RecAreaFeeDescription'],p['StayLimit'])),'n':p['RecAreaName'].strip(),'ll':ll(f),'t':('both' if hk and cp else 'hike' if hk else 'camp'),'acts':acts,'d':clean(p['RecAreaDescription']),'fee':'' if fee.upper() in ('N/A','NA','') else fee,'stay':clean(p['StayLimit'],100),'url':p['BLMRecURL'] or '','res':p['RecAreaReservationURL'] or '','ph':p['RecAreaPhone'] or ''})
+  sites.append({'img':imgs(p['RecAreaDescription']),'pk':pk,'am':amen(plain(p['RecAreaDescription'],p['RecAreaFeeDescription'],p['StayLimit'])),'n':p['RecAreaName'].strip(),'ll':ll(f),'t':('both' if hk and cp else 'hike' if hk else 'camp'),'acts':acts,'d':clean(p['RecAreaDescription']),'fee':'' if fee.upper() in ('N/A','NA','') else fee,'stay':clean(p['StayLimit'],100),'url':p['BLMRecURL'] or '','res':p['RecAreaReservationURL'] or '','ph':p['RecAreaPhone'] or ''})
 camps=[]
 for f in load('ridbcamp')['features']:
   p=f['properties']
   if not f['geometry']: continue
   fee=clean(p['FacilityUseFeeDescription'],140)
-  camps.append({'am':amen(plain(p['FacilityDescription'],p['FacilityUseFeeDescription'],p['StayLimit']),notice_src=plain(p['FacilityDescription'])[:600]),'n':p['FacilityName'].strip(),'ll':ll(f),'k':p['FacilityTypeDescription'] or 'Campground','d':clean(p['FacilityDescription']),'fee':fee,'stay':clean(p['StayLimit'],100),'url':p['BLMFacURL'] or '','res':p['FacilityReservationURL'] or '','ph':p['FacilityPhone'] or '','src':'ridb'})
+  camps.append({'img':imgs(p['FacilityDescription']),'fid':(re.search(r'/(\d+)/?\d*$',p['BLMFacURL'] or '') or [None,None])[1],'am':amen(plain(p['FacilityDescription'],p['FacilityUseFeeDescription'],p['StayLimit']),notice_src=plain(p['FacilityDescription'])[:600]),'n':p['FacilityName'].strip(),'ll':ll(f),'k':p['FacilityTypeDescription'] or 'Campground','d':clean(p['FacilityDescription']),'fee':fee,'stay':clean(p['StayLimit'],100),'url':p['BLMFacURL'] or '','res':p['FacilityReservationURL'] or '','ph':p['FacilityPhone'] or '','src':'ridb'})
 def near(a,b): return abs(a[0]-b[0])<0.006 and abs(a[1]-b[1])<0.007
 th=[];info=[]
 toilets=[ll(f) for f in load('blmamen')['features'] if f['properties']['FET_SUBTYPE']=='Toilet' and f['geometry']]
@@ -196,7 +210,7 @@ for f in load('fscamp')['features']:
   txt=plain(p['recareadescription'],p['restrictions'],p['reservation_info'],p['accessibility'],p['feedescription'],i2.get('important_info'),i2.get('restrictions'),i2.get('site_contact_notes'))
   am=amen(txt,water=i2.get('water_availability') or inf.get('water_availability'),rest=i2.get('restroom_availability') or inf.get('restroom_availability'),packout=i2.get('pack_in_out'),
           primitive=p['markeractivity'] in ('Dispersed Camping',) or str(i2.get('development_scale') or '') in ('0','1'),notice_src=plain(i2.get('important_info'),i2.get('restrictions'),p['restrictions']))
-  fsc.append({'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription']),'season':nz(p['open_season_start'],120),'ri':ri,'restr':nz(p['restrictions'],200),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
+  fsc.append({'img':imgs(p['recareadescription']),'fid':str(inf['nrrs_id']) if inf.get('nrrs_id') else None,'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription']),'season':nz(p['open_season_start'],120),'ri':ri,'restr':nz(p['restrictions'],200),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
 fsh=[]; seen=set()
 hk={'Trailhead':'Trailhead','Day Hiking':'Day hike','Backpacking':'Backpacking area','Viewing Scenery':'Scenic area'}
 for f in load('fshike')['features']:
@@ -210,7 +224,7 @@ for f in load('fshike')['features']:
   am=amen(txt,water=i2.get('water_availability'),rest=i2.get('restroom_availability'),packout=i2.get('pack_in_out'),primitive=True,notice_src=plain(i2.get('important_info'),i2.get('restrictions'),p['restrictions']))
   def nz2(v,n=200):
     v=clean(v,n); return '' if v.strip().rstrip('.').lower() in ('none','n/a','') else v
-  o={'rid':str(p['recareaid']),'n':p['recareaname'].strip(),'ll':ll(f),'k':hk.get(p['markeractivity'],'Hiking'),'forest':p['forestname'],'d':nz2(p['recareadescription'],300),
+  o={'img':imgs(p['recareadescription']),'rid':str(p['recareaid']),'n':p['recareaname'].strip(),'ll':ll(f),'k':hk.get(p['markeractivity'],'Hiking'),'forest':p['forestname'],'d':nz2(p['recareadescription'],300),
      'fee':nz2(p['feedescription'],160),'season':nz2(p['open_season_start'],120),'restr':nz2(p['restrictions'],200),'url':i2.get('usda_portal_url') or p['recareaurl'] or '','am':am}
   o['id']='h'+hashlib.sha1((o['n']+'%.5f,%.5f'%tuple(o['ll'])).encode()).hexdigest()[:8]
   fsh.append(o)
@@ -241,6 +255,16 @@ for kind,arr in (('r',sites),('c',camps),('t',th),('f',fsc)):
 inCA=lambda o: o['ll'][1] < -113.5
 sites[:]=[o for o in sites if inCA(o)]; camps[:]=[o for o in camps if inCA(o)]; th[:]=[o for o in th if inCA(o)]
 out2={'sites':sites,'camps':camps,'th':th,'info':info,'foot':fc(foot),'trails':fc(trails),'trailMiles':round(miles)}
+# Recreation.gov photos (pipeline/photos.py) come first: they show the campground itself.
+THUMBS=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'site','thumbs')
+for arr in (sites, camps, fsc, fsh, th):
+  for o in arr:
+    own=[u for u in o.get('img',[]) if '/Internet/FSE_MEDIA/' not in u]   # old Forest Service photo links no longer work
+    extra=PHOTOS.get(o.get('id'),[])
+    o['img']=(extra+[u for u in own if u not in extra])[:8]
+    if os.path.exists(os.path.join(THUMBS,o.get('id','')+'.webp')): o['th']=1
+    if not o.get('img'): o.pop('img',None)
+    if not o.get('fid'): o.pop('fid',None)
 save('rec.json', out2)
 def lname(n):
   n=re.sub(r'\bLk\b','Lake',n); n=re.sub(r'\bRes\b','Reservoir',n); n=re.sub(r'\bCrk\b','Creek',n); return n.strip()
@@ -263,3 +287,5 @@ def in_ca(lat,lon): return any(_inring(lon,lat,r) for r in _ca)
 lakelabels=[[n,v[0],v[1],round(lk[n]['a']/1e6,1)] for n,v in lab.items() if lk[n]['a']>=4e6 and not re.search(r'\bRiv\b|River',n) and in_ca(v[0],v[1])]
 out3={'fsh':fsh,'lakes':lakes,'lakeLabels':lakelabels,'fsc':fsc,'nps':npsfc,'usfs':usfs,'forests':forests,'hwy':hwfc}
 save('fs.json', out3)
+# Small file of just the places, for the campground pages
+save('places.json', {'ra':sites,'cg':camps,'th':th,'fc':fsc,'fh':fsh})

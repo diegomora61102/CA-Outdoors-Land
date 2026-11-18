@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Campground · CA Outdoors Land</title>
+<meta name="description" content="Photos, amenities, weather, alerts and reviews for a California campground or trail.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/place.css">
+</head>
+<body class="place-page">
+<header class="site-head">
+  <a class="brand" href="./"><span class="chip" aria-hidden="true"></span><span>CA Outdoors Land</span></a>
+  <nav class="site-nav" aria-label="Site"><a href="./" id="backMap">Map</a><a href="#reviews">Reviews</a></nav>
+  <div class="acct-area">
+    <a class="hbtn" id="mineBtn" href="./#mine" hidden>My places </a>
+    <button type="button" class="hbtn primary" id="acctBtn">Sign in</button>
+  </div>
+</header>
+<main class="place" id="place">
+  <p class="crumb"><a href="./" id="crumb">← Back to the map</a></p>
+  <div class="place-loading" id="placeLoading" role="status">Loading…</div>
+  <article id="placeBody" hidden>
+    <section class="gallery" id="gallery" aria-label="Photos"></section>
+    <header class="place-head">
+      <p class="kicker" id="pKind"></p>
+      <h1 id="pName"></h1>
+      <p class="sub" id="pSub"></p>
+      <div class="p-actions" id="pActions"></div>
+    </header>
+    <div class="place-grid">
+      <div class="col-main">
+        <div id="pAlerts"></div>
+        <section class="card" id="pAbout"></section>
+        <section class="card" id="pAmen"><h2>Amenities</h2></section>
+        <section class="card" id="reviews"><h2>Reviews</h2><div id="revSummary"></div><div id="revForm"></div><ul class="rev-list" id="revList"></ul></section>
+      </div>
+      <aside class="col-side">
+        <section class="card" id="pWeather"><h2>Weather</h2><div id="wxBox"><p class="muted">Loading weather…</p></div></section>
+        <section class="card"><h2>Location</h2><div id="miniMap" class="mini-map" role="img" aria-label="Map of this place"></div><p class="muted" id="pCoords"></p></section>
+        <section class="card" id="pNear"><h2>Nearby campgrounds</h2><ul class="near-list" id="nearList"></ul></section>
+      </aside>
+    </div>
+  </article>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<dialog class="auth" id="authDlg" aria-labelledby="authTitle">
+  <button type="button" class="x" id="authClose" aria-label="Close">×</button>
+  <h2 id="authTitle">Sign in</h2>
+  <p id="authMsg">Get a sign-in link by email. No password needed.</p>
+  <form id="authForm">
+    <label for="authEmail">Email</label>
+    <input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com">
+    <button type="submit" class="btn" id="authSend">Email me a sign-in link</button>
+    <button type="button" class="btn alt" id="googleBtn" hidden>Continue with Google</button>
+  </form>
+  <p id="authSent" hidden><b>Check your email.</b> Open the link on this device to finish signing in.</p>
+</dialog>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/place.js"></script>
+</body>
+</html>

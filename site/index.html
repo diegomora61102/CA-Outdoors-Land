@@ -11,27 +11,36 @@
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<div id="map" role="application" aria-label="Map of public land, campgrounds and trails in California"></div>
-<div class="loading" id="loading" role="status">Loading the map…</div>
+<header class="site-head">
+  <a class="brand" href="./"><span class="chip" aria-hidden="true"></span><span>CA Outdoors Land</span></a>
+  <nav class="site-nav" aria-label="Site"><a href="#map-section">Map</a><a href="#alerts">Alerts</a><a href="#about">About the data</a></nav>
+  <div class="acct-area">
+    <button type="button" class="hbtn" id="mineBtn" hidden>My places <span class="badge" id="mineCountHdr">0</span></button>
+    <button type="button" class="hbtn primary" id="acctBtn">Sign in</button>
+  </div>
+</header>
 
-<aside class="panel" id="panel">
-  <header>
-    <div class="eyebrow"><span class="chip"></span>Public land · campgrounds · trails · weather<button type="button" class="acct" id="acctBtn">Sign in</button></div>
-    <h1>CA Outdoors Land</h1>
-    <button class="sheet-toggle" id="sheetToggle" aria-expanded="true" aria-controls="panelBody">Layers</button>
-    <p class="lede">BLM, National Forest and National Park land in California, with campgrounds, trailheads and trails. Click a pin for details and reservation links, or anywhere else to check who manages the land.</p>
-  </header>
-  <div class="scroll" id="panelBody">
-    <div class="alert-sum" id="alertSum" hidden></div>
-    <section id="sharedList" hidden>
-      <h2>Shared list: <span id="sharedName"></span></h2>
-      <ul class="units" id="sharedItems"></ul>
+<main class="app">
+  <aside class="left" id="left" aria-label="Campgrounds and map layers">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="t-camps" aria-controls="tab-camps" aria-selected="true">Campgrounds</button>
+      <button type="button" role="tab" id="t-layers" aria-controls="tab-layers" aria-selected="false">Layers &amp; search</button>
+      <button type="button" role="tab" id="t-mine" aria-controls="tab-mine" aria-selected="false">My places</button>
+    </div>
+    <section class="tabpanel" id="tab-camps" role="tabpanel" aria-labelledby="t-camps">
+      <div class="list-head">
+        <p class="list-count" id="campCount" aria-live="polite">Loading campgrounds…</p>
+        <div class="chips" role="group" aria-label="Filter campgrounds">
+          <label class="chip-f"><input type="checkbox" id="f-open"><span>Open now</span></label>
+          <label class="chip-f"><input type="checkbox" id="f-water"><span>Drinking water</span></label>
+          <label class="chip-f"><input type="checkbox" id="f-res"><span>Reservable</span></label>
+          <label class="chip-f"><input type="checkbox" id="f-photo"><span>Has photos</span></label>
+        </div>
+      </div>
+      <ul class="camp-list" id="campList"></ul>
+      <button type="button" class="btn alt more" id="campMore" hidden>Show more</button>
     </section>
-    <section id="mine" hidden>
-      <h2>My places (<span id="mineCount">0</span>)</h2>
-      <ul class="units" id="mineList"></ul>
-      <div class="share-row"><input class="search" id="listName" type="text" placeholder="List name (optional)" aria-label="Name for your shared list"><button type="button" class="btn" id="shareList">Share my list</button></div>
-    </section>
+    <section class="tabpanel scroll" id="tab-layers" role="tabpanel" aria-labelledby="t-layers" hidden>
     <section>
       <h2>Hiking &amp; camping</h2>
       <div class="layers">
@@ -71,10 +80,47 @@
       <input class="search" id="search" type="search" placeholder="Search campgrounds, trails, wilderness…" autocomplete="off" aria-label="Search places">
       <ul class="units" id="units"></ul>
     </section>
+    </section>
+    <section class="tabpanel scroll" id="tab-mine" role="tabpanel" aria-labelledby="t-mine" hidden>
+    <section id="sharedList" hidden>
+      <h2>Shared list: <span id="sharedName"></span></h2>
+      <ul class="units" id="sharedItems"></ul>
+    </section>
+    <section id="mine">
+      <h2>My places (<span id="mineCount">0</span>)</h2>
+      <p class="muted" id="mineSignedOut">Sign in to save campgrounds, trailheads and areas here and share them as a list.</p>
+      <ul class="units" id="mineList"></ul>
+      <div class="share-row"><input class="search" id="listName" type="text" placeholder="List name (optional)" aria-label="Name for your shared list"><button type="button" class="btn" id="shareList">Share my list</button></div>
+    </section>
+    </section>
+  </aside>
+
+  <section class="mapwrap" id="map-section" aria-label="Map">
+    <div id="map" role="application" aria-label="Map of public land, campgrounds and trails in California"></div>
+    <div class="loading" id="loading" role="status">Loading the map…</div>
+    <div class="readout" id="readout">Hover the map for coordinates</div>
+  </section>
+
+  <aside class="right" id="alerts" aria-label="Weather alerts by county">
+    <h2 class="side-h">Weather alerts by county</h2>
+    <div class="alert-sum" id="alertSum" hidden></div>
+    <div class="seg small" role="group" aria-label="Which alerts">
+      <button type="button" data-afilter="all" aria-pressed="true">All alerts</button>
+      <button type="button" data-afilter="warn" aria-pressed="false">Warnings only</button>
+    </div>
+    <div id="countyAlerts"><p class="muted">Loading alerts…</p></div>
+    <h2 class="side-h">Active wildfires</h2>
+    <ul class="fire-list" id="fireList"><li class="muted">Loading…</li></ul>
+  </aside>
+</main>
+
+<footer class="site-foot" id="about">
+  <div class="foot-in">
+    <h2>About the data</h2>
     <p class="note">Land, campground, trail and lake data comes from the BLM, USDA Forest Service and US Census and is refreshed monthly. Forest Service open/closed status is checked daily, and temporary closures, active wildfires (NIFC) and National Weather Service alerts are checked every hour. Weather updates hourly from NWS stations and forecasts: a station reading where one is close by and at a similar elevation, otherwise an estimate from nearby stations corrected for elevation. BLM doesn't publish open/closed status, and dispersed camping is allowed on most BLM land unless posted. Ownership is approximate at parcel edges; check with the managing office before you rely on it on the ground. Basemaps from the USGS National Map.</p>
+    <p class="muted">Not affiliated with the BLM, USDA Forest Service, National Park Service or NWS. Always check the managing agency before you go.</p>
   </div>
-</aside>
-<div class="readout" id="readout">Hover the map for coordinates</div>
+</footer>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <dialog class="auth" id="authDlg" aria-labelledby="authTitle">
   <button type="button" class="x" id="authClose" aria-label="Close">×</button>
@@ -91,6 +137,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/config.js"></script>
+<script src="assets/account.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

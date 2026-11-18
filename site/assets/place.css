@@ -1,0 +1,72 @@
+/* Campground / place page */
+body.place-page { overflow: auto; background: var(--panel-2); }
+.place { max-width: 1120px; margin: 0 auto; padding-block: 14px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.crumb { margin: 0 0 12px; font: 600 13px var(--sans); }
+.crumb a { color: var(--focus); text-decoration: none; }
+.place-loading { padding: 60px 0; text-align: center; color: var(--ink-2); }
+.gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 170px 170px; gap: 6px; border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+.gallery button { all: unset; cursor: zoom-in; position: relative; background: var(--line); min-height: 0; }
+.gallery button:first-child { grid-row: 1 / 3; }
+.gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.gallery .more-ph { position: absolute; right: 8px; bottom: 8px; padding: 4px 9px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; font: 600 12px var(--sans); }
+.gallery.n1 { grid-template-columns: 1fr; grid-template-rows: 320px; }
+.gallery.n2 { grid-template-columns: 1fr 1fr; grid-template-rows: 300px; } .gallery.n2 button:first-child { grid-row: auto; }
+.gallery.n3 { grid-template-columns: 2fr 1fr; } 
+.gallery.none { display: grid; place-items: center; grid-template-columns: 1fr; grid-template-rows: 150px; background: var(--panel); border: 1px dashed var(--line); color: var(--ink-2); font-size: 13px; text-align: center; padding: 0 16px; }
+.place-head { margin-bottom: 16px; }
+.kicker { margin: 0 0 4px; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.place-head h1 { margin: 0; font: 800 clamp(24px, 4vw, 34px)/1.1 var(--sans); letter-spacing: -.015em; text-wrap: balance; }
+.place-head .sub { margin: 6px 0 12px; color: var(--ink-2); font-size: 14px; }
+.p-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.p-actions a, .p-actions button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 13px var(--sans); text-decoration: none; cursor: pointer; }
+.p-actions .main { background: var(--fscamp); border-color: var(--fscamp); color: #fff; }
+.p-actions .on { background: color-mix(in srgb, var(--blm) 35%, var(--panel)); border-color: var(--blm-edge); }
+.place-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.col-main, .col-side { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.card h2 { margin: 0 0 10px; font: 700 16px var(--sans); }
+.card p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+.desc-full { white-space: pre-line; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13.5px; }
+.facts dt { font: 500 10.5px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.facts dd { margin: 0; }
+.amen-rows { display: grid; grid-template-columns: auto auto 1fr; gap: 8px 10px; align-items: baseline; margin: 0 0 10px; font-size: 14px; }
+.amen-rows dt { font: 500 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.amen-rows dd { margin: 0; } .amen-rows dd.unk { color: var(--ink-2); }
+.mini-map { height: 220px; border-radius: 7px; overflow: hidden; margin-bottom: 8px; }
+.near-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.near-list a { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 13px; }
+.near-list a:hover { background: var(--panel-2); }
+.near-list small { display: block; color: var(--ink-2); font-size: 11.5px; }
+.near-list .d { font: 11.5px var(--mono); color: var(--ink-2); }
+/* weather (same look as the map popup) */
+#wxBox .wx-in { padding: 0; }
+.rev-sum { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.rev-sum .avg { font: 800 28px var(--sans); }
+.stars { color: #c79a12; letter-spacing: 1px; }
+.rev-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; }
+.rev-list li { border-top: 1px solid var(--line); padding-top: 12px; }
+.rev-list .who { font-weight: 700; font-size: 13.5px; }
+.rev-list .meta { color: var(--ink-2); font-size: 12px; }
+.rev-list p { margin: 6px 0 0; white-space: pre-line; }
+.rev-list .del { all: unset; cursor: pointer; color: var(--nlcs); font-size: 12px; margin-left: 8px; }
+.rev-form { display: grid; gap: 8px; padding: 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); }
+.rev-form label { font: 600 12px var(--sans); }
+.rev-form input, .rev-form textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: 14px var(--sans); }
+.rev-form textarea { min-height: 96px; resize: vertical; }
+.star-pick { display: flex; gap: 4px; border: 0; padding: 0; margin: 0; }
+.star-pick label { font-size: 26px; line-height: 1; cursor: pointer; color: var(--line); }
+.star-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.star-pick label.on { color: #c79a12; }
+.star-pick input:focus-visible + span { outline: 2px solid var(--focus); }
+.lightbox { position: fixed; inset: 0; z-index: 4000; background: rgba(10,10,8,.92); display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 16px; }
+.lightbox img { max-width: 100%; max-height: calc(100vh - 90px); object-fit: contain; }
+.lightbox .lb-bar { display: flex; gap: 12px; align-items: center; color: #fff; font: 600 13px var(--sans); }
+.lightbox button { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); color: #fff; }
+@media (max-width: 860px) {
+  .place-grid { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: 220px 110px; }
+  .gallery button:first-child { grid-column: 1 / -1; grid-row: auto; }
+  .gallery button:nth-child(n+4) { display: none; }
+}

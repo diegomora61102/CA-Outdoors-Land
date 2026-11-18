@@ -10,12 +10,15 @@ Writes the `alerts` feed:
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import require_supabase_in_ci, get, upsert_feeds, pins, now_iso, km, in_geom, bbox, polys
+from common import require_supabase_in_ci, ROOT, get, upsert_feeds, pins, now_iso, km, in_geom, bbox, polys
 from sources import layer, FS
 
 WFIGS = 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0'
-SKIP = ('Small Craft', 'Gale', 'Marine', 'Hazardous Seas', 'Hurricane Force', 'Storm Warning', 'Low Water', 'Brisk Wind',
-        'Rip Current', 'Lake Wind', 'Test')
+# Marine and test products, matched by exact event name (a substring test once dropped "Winter Storm Warning").
+SKIP = {'Small Craft Advisory', 'Gale Warning', 'Gale Watch', 'Storm Warning', 'Storm Watch', 'Hazardous Seas Warning',
+        'Hazardous Seas Watch', 'Hurricane Force Wind Warning', 'Hurricane Force Wind Watch', 'Special Marine Warning',
+        'Marine Weather Statement', 'Brisk Wind Advisory', 'Low Water Advisory', 'Lake Wind Advisory', 'Test Message'}
+SEV_RANK = {'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1}
 FIRE_MI = 10
 
 def main():
@@ -55,31 +58,38 @@ def main():
             if d_km <= FIRE_MI * 1.609: add(p['id'], 'f', [i, round(d_km / 1.609, 1)])
 
     # 3. NWS alerts
-    nws = {}; zcache = {}
+    counties = json.load(open(os.path.join(ROOT, 'pipeline', 'state', 'ca_counties.json')))
+    nws = {}; zcache = {}; by_county = {}
     ad = get('https://api.weather.gov/alerts/active?area=CA') or {}
     for f in ad.get('features') or []:
         a = f['properties']; ev = a.get('event') or ''
-        if any(k in ev for k in SKIP) or a.get('status') != 'Actual': continue
+        if ev in SKIP or ev.startswith('Marine') or a.get('status') != 'Actual': continue
         geoms = [f['geometry']] if f.get('geometry') else []
         if not geoms:
             for z in a.get('affectedZones') or []:
                 if z not in zcache: zcache[z] = (get(z) or {}).get('geometry')
                 if zcache[z]: geoms.append(zcache[z])
-        if not geoms: continue
         aid = a['id'].rsplit('/', 1)[-1][-24:]
+        cty = sorted({counties[c[3:]] for c in (a.get('geocode') or {}).get('SAME', []) if c.startswith('006') and c[3:] in counties})
         nws[aid] = {'e': ev, 'h': (a.get('headline') or '')[:200], 'sev': a.get('severity'), 'ends': a.get('ends') or a.get('expires'),
+                    'onset': a.get('onset'), 'area': (a.get('areaDesc') or '')[:300], 'c': cty,
                     'url': 'https://alerts.weather.gov/search?id=' + a['id'].rsplit('/', 1)[-1]}
+        for c in cty: by_county.setdefault(c, []).append(aid)
+        if not geoms: continue
         boxes = [(g, bbox(g)) for g in geoms]
         hit_any = False
         for p in P:
             for g, bb in boxes:
                 if bb and bb[0] <= p['lon'] <= bb[2] and bb[1] <= p['lat'] <= bb[3] and in_geom(p['lon'], p['lat'], g):
                     add(p['id'], 'a', aid); hit_any = True; break
-        if not hit_any: del nws[aid]
+        if not hit_any and not cty: del nws[aid]
 
-    out = {'updated': now_iso(), 'nws': nws, 'fires': fires, 'sites': sites}
+    # County list for the "alerts by county" panel: worst severity first, then most alerts.
+    rank = lambda c: (-max(SEV_RANK.get(nws[i]['sev'], 0) for i in by_county[c]), -len(by_county[c]), c)
+    county_list = [{'n': c, 'a': sorted(set(by_county[c]), key=lambda i: -SEV_RANK.get(nws[i]['sev'], 0))} for c in sorted(by_county, key=rank)]
+    out = {'updated': now_iso(), 'nws': nws, 'fires': fires, 'sites': sites, 'counties': county_list}
     upsert_feeds([{'key': 'alerts', 'data': out}], out_dir=sys.argv[1] if len(sys.argv) > 1 else None)
-    print('closures %d, fires %d (sites near fire %d), nws alerts %d covering %d sites' % (
-        len(closed), len(fires), sum(1 for s in sites.values() if 'f' in s), len(nws), sum(1 for s in sites.values() if 'a' in s)))
+    print('closures %d, fires %d (sites near fire %d), nws alerts %d covering %d sites, %d counties' % (
+        len(closed), len(fires), sum(1 for s in sites.values() if 'f' in s), len(nws), sum(1 for s in sites.values() if 'a' in s), len(county_list)))
 
 if __name__ == '__main__': main()

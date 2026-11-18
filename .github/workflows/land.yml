@@ -17,11 +17,19 @@ jobs:
         run: python3 -I pipeline/sources.py raw
       - name: Build the map data
         run: python3 -I pipeline/build_data.py raw site/data
+      - name: Install image tools
+        run: pip install pillow==11.0.0
+      - name: Photos and thumbnails (Forest Service pages; Recreation.gov once RIDB_API_KEY is set)
+        env:
+          RIDB_API_KEY: ${{ secrets.RIDB_API_KEY }}
+        run: python3 -I pipeline/photos.py
+      - name: Rebuild with photos
+        run: python3 -I pipeline/build_data.py raw site/data
       - name: Sync weather sites (new pins get an NWS grid cell)
         run: python3 -I pipeline/wx_sites.py --stations
       - name: Commit if anything changed
         run: |
           git config user.name "data-refresh-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data pipeline/state
+          git add site/data site/thumbs pipeline/state
           if git diff --cached --quiet; then echo "No changes this month."; else git commit -m "Monthly data refresh $(date -u +%Y-%m-%d)" && git push; fi

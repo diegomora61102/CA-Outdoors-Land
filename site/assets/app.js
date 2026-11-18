@@ -28,7 +28,7 @@
 
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
   const fitCA = () => {
-    const pad = narrow() ? { paddingTopLeft: [10, 10], paddingBottomRight: [10, 180] } : { paddingTopLeft: [370, 20], paddingBottomRight: [20, 20] };
+    const pad = { paddingTopLeft: [10, 10], paddingBottomRight: [10, 10] };
     map.fitBounds([[32.5, -124.45], [42.05, -114.1]], pad);
   };
   fitCA();
@@ -217,7 +217,7 @@
     return h;
   }
   let canSave = false;   // true once Supabase accounts are configured
-  const actions = (o) => `<div class="pp-actions">${canSave ? `<button type="button" class="act fav${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}">${favs.has(o.id) ? '★ Saved' : '☆ Save'}</button>` : ''}<button type="button" class="act" data-share="${o.id}">Share</button></div>`;
+  const actions = (o) => `${o.img && o.img.length ? `<a class="pp-photo" href="place.html?id=${o.id}"><img src="${esc(o.th ? 'thumbs/' + o.id + '.webp' : o.img[0])}" alt="Photo of ${esc(o.n)}" loading="lazy" onerror="this.parentNode.remove()"></a>` : ''}<div class="pp-actions">${canSave ? `<button type="button" class="act fav${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}">${favs.has(o.id) ? '★ Saved' : '☆ Save'}</button>` : ''}<button type="button" class="act" data-share="${o.id}">Share</button><a class="act" href="place.html?id=${o.id}">Details${o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div>`;
 
   const pops = {
     ra: (o) => {
@@ -503,18 +503,26 @@
       return;
     }
     hl = L.geoJSON(u.f, { pane: 'lines', interactive: false, renderer: rd.lines, style: { color: css('--ink'), weight: 2.5, fill: false } }).addTo(map);
-    const pad = narrow() ? { paddingTopLeft: [20, 20], paddingBottomRight: [20, 260], maxZoom: 12 } : { paddingTopLeft: [380, 40], paddingBottomRight: [40, 40], maxZoom: 12 };
+    const pad = { paddingTopLeft: [30, 30], paddingBottomRight: [30, 30], maxZoom: 12 };
     map.flyToBounds(hl.getBounds(), Object.assign({ duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.8 }, pad));
     if (narrow()) setSheet(false);
   }
   search.addEventListener('input', render);
   render();
 
-  // ---------- Mobile sheet ----------
-  const panel = document.getElementById('panel'), tg = document.getElementById('sheetToggle');
-  function setSheet(open) { panel.classList.toggle('collapsed', !open); tg.setAttribute('aria-expanded', open); tg.textContent = open ? 'Hide' : 'Layers'; }
-  tg.addEventListener('click', () => setSheet(panel.classList.contains('collapsed')));
-  if (narrow()) setSheet(false);
+  // ---------- Left-column tabs ----------
+  const mapSection = document.getElementById('map-section');
+  const tabs = { camps: 't-camps', layers: 't-layers', mine: 't-mine' };
+  function selectTab(name) {
+    Object.entries(tabs).forEach(([k, id]) => {
+      const on = k === name; document.getElementById(id).setAttribute('aria-selected', on);
+      document.getElementById('tab-' + k).hidden = !on;
+    });
+  }
+  Object.entries(tabs).forEach(([k, id]) => document.getElementById(id).addEventListener('click', () => selectTab(k)));
+  // On phones the lists sit under the map: bring the map back into view when something is picked.
+  function setSheet(open) { if (!open && narrow()) mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  new ResizeObserver(() => map.invalidateSize()).observe(mapSection);
 
   // ---------- Basemap picker ----------
   document.querySelectorAll('[data-base]').forEach(b => b.addEventListener('click', () => setBase(b.dataset.base)));
@@ -522,8 +530,7 @@
   setBase(savedBase);
 
   // ---------- Toasts ----------
-  const toastEl = document.getElementById('toast'); let toastT;
-  function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { toastEl.hidden = true; }, 3200); }
+  const toast = (m) => window.Account.toast(m);
 
   // ---------- Share links: ?site=<id> opens that place ----------
   const siteUrl = (id) => location.origin + location.pathname + '?site=' + encodeURIComponent(id);
@@ -536,21 +543,20 @@
     zoomTo({ o: v.o, layer: v.k });
   }
 
-  // ---------- Accounts and favorites (Supabase) ----------
-  const sb = (window.supabase && CFG.supabaseUrl) ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey) : null;
-  let user = null;
-  const acctBtn = document.getElementById('acctBtn'), dlg = document.getElementById('authDlg');
-  const mine = document.getElementById('mine'), mineList = document.getElementById('mineList');
-  if (!sb) acctBtn.hidden = true; else canSave = true;
+  // ---------- Favorites (sign-in lives in account.js, shared with the campground pages) ----------
+  const Account = window.Account, sb = Account.sb;
+  const mineList = document.getElementById('mineList');
+  if (sb) canSave = true;
   function refreshOpenPopup() { const p = map._popup; if (p && p.isOpen()) p.update(); }
   function renderMine() {
-    mine.hidden = !user;
-    acctBtn.textContent = user ? 'Signed in' : 'Sign in';
-    acctBtn.title = user ? (user.email || '') + ' (click to sign out)' : 'Sign in to save places';
-    if (!user) return;
+    const user = Account.user;
+    document.getElementById('mineSignedOut').hidden = !!user;
+    document.querySelector('#mine .share-row').hidden = !user;
     const rows = [...favs.values()].sort((a, b) => a.name.localeCompare(b.name));
     document.getElementById('mineCount').textContent = rows.length;
-    mineList.innerHTML = rows.length ? '' : '<li class="empty">Tap ☆ Save on any campground, trailhead or area to keep it here.</li>';
+    document.getElementById('mineCountHdr').textContent = rows.length;
+    mineList.innerHTML = !user ? '' : rows.length ? '' : '<li class="empty">Tap ☆ Save on any campground, trailhead or area to keep it here.</li>';
+    if (!user) return;
     rows.forEach(r => {
       const li = document.createElement('li');
       li.innerHTML = `<button type="button" class="go"><span class="dot" style="background:var(--fscamp)"></span><span>${esc(r.name)}<span class="kind">${esc(r.kind_label || '')}</span></span></button><button type="button" class="rm" aria-label="Remove ${esc(r.name)}">Remove</button>`;
@@ -562,13 +568,13 @@
   }
   async function loadFavs() {
     favs.clear();
-    if (user) { const { data, error } = await sb.from('favorites').select('*'); if (!error) data.forEach(r => favs.set(r.site_id, r)); }
-    renderMine(); refreshOpenPopup();
+    if (Account.user) { const { data, error } = await sb.from('favorites').select('*'); if (!error) data.forEach(r => favs.set(r.site_id, r)); }
+    renderMine(); refreshOpenPopup(); renderList();
   }
   const kindLabels = { ra: 'BLM recreation area', cg: 'BLM campground', th: 'BLM trailhead', fc: 'National Forest campground', fh: 'National Forest trail' };
   async function toggleFav(id) {
     if (!sb) return;
-    if (!user) { openAuth('Sign in to save places to your list.'); return; }
+    if (!Account.user) { Account.openAuth('Sign in to save places to your list.'); return; }
     const v = pinIndex.get(id); if (!v) return;
     if (favs.has(id)) {
       const { error } = await sb.from('favorites').delete().eq('site_id', id);
@@ -580,33 +586,11 @@
       if (error) { toast('Couldn\'t save it. Try again.'); return; }
       favs.set(id, data); toast('Saved to your places');
     }
-    renderMine(); refreshOpenPopup();
+    renderMine(); refreshOpenPopup(); renderList();
   }
-  function openAuth(msg) {
-    document.getElementById('authMsg').textContent = msg || 'Get a sign-in link by email. No password needed.';
-    document.getElementById('authSent').hidden = true; document.getElementById('authForm').hidden = false;
-    document.getElementById('googleBtn').hidden = !CFG.googleSignIn;
-    dlg.showModal();
-  }
-  acctBtn.addEventListener('click', async () => {
-    if (!user) return openAuth();
-    await sb.auth.signOut(); toast('Signed out');
-  });
-  document.getElementById('authClose').addEventListener('click', () => dlg.close());
-  document.getElementById('authForm').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const email = document.getElementById('authEmail').value.trim();
-    const btn = document.getElementById('authSend'); btn.disabled = true; btn.textContent = 'Sending…';
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname + location.search } });
-    btn.disabled = false; btn.textContent = 'Email me a sign-in link';
-    if (error) { document.getElementById('authMsg').textContent = 'That didn\'t work: ' + error.message; return; }
-    document.getElementById('authForm').hidden = true; document.getElementById('authSent').hidden = false;
-  });
-  document.getElementById('googleBtn').addEventListener('click', () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname + location.search } }));
-  if (sb) {
-    sb.auth.onAuthStateChange((_ev, session) => { const u = session ? session.user : null; if ((u && u.id) !== (user && user.id)) { user = u; loadFavs(); if (u && dlg.open) dlg.close(); } });
-    const { data } = await sb.auth.getSession(); user = data.session ? data.session.user : null; loadFavs();
-  }
+  document.getElementById('mineBtn').addEventListener('click', () => { selectTab('mine'); document.getElementById('left').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  Account.onChange(loadFavs);
+  Account.ready.then(loadFavs);
   // Share my whole list: saves a snapshot anyone with the link can open (?list=<id>)
   document.getElementById('shareList').addEventListener('click', async () => {
     const items = [...favs.values()].map(r => ({ id: r.site_id, n: r.name, k: r.kind_label }));
@@ -643,7 +627,99 @@
       document.getElementById('cnt-fire').textContent = ALERTS.fires.length;
     }
     const fe = document.getElementById('lyr-fire'); setLayer('fire', fe.checked); fe.addEventListener('change', () => setLayer('fire', fe.checked));
-    refreshOpenPopup();
+    refreshOpenPopup(); renderList(); renderCounties(); renderFires();
+  });
+
+  // ---------- Campgrounds in view (left list) ----------
+  const listEl = document.getElementById('campList'), countEl = document.getElementById('campCount'), moreBtn = document.getElementById('campMore');
+  const fOpen = document.getElementById('f-open'), fWater = document.getElementById('f-water'), fRes = document.getElementById('f-res'), fPhoto = document.getElementById('f-photo');
+  let listLimit = 40;
+  const statusOf = (o) => (STATUS && STATUS.s[o.id]) || o.st || '';
+  const agencyOf = (v) => v.k === 'fc' ? v.o.forest : v.k === 'nc' ? (v.o.park || 'National Park') : 'Bureau of Land Management';
+  function campsInView() {
+    const b = map.getBounds(), c = map.getCenter(), out = [];
+    campIndex.forEach(v => {
+      const box = document.getElementById('lyr-' + v.k); if (box && !box.checked) return;
+      if (!b.contains(v.o.ll)) return;
+      if (fOpen.checked && statusOf(v.o) !== 'open') return;
+      if (fWater.checked && !(v.o.am && v.o.am.water[0] === 'yes')) return;
+      if (fRes.checked && !v.o.res) return;
+      if (fPhoto.checked && !(v.o.th || (v.o.img && v.o.img.length))) return;
+      out.push({ ...v, d: nearKm([c.lat, c.lng], v.o.ll) });
+    });
+    return out.sort((a, b) => a.d - b.d);
+  }
+  const phSvg = '<svg width="34" height="28" viewBox="0 0 18 16" aria-hidden="true"><path d="M9 1.5 16.5 14.5H1.5Z" style="fill:none;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round"/><path d="M9 8.5 11.5 14.5H6.5Z" style="fill:currentColor"/></svg>';
+  function card(v) {
+    const o = v.o, st = statusOf(o), al = ALERTS && ALERTS.sites[o.id];
+    const tags = [];
+    if (al && al.c) tags.push('<span class="tag bad">Temporarily closed</span>');
+    else if (st) tags.push(`<span class="tag ${st === 'open' ? 'ok' : 'bad'}">${esc(st[0].toUpperCase() + st.slice(1))}</span>`);
+    if (al && al.f) tags.push('<span class="tag bad">Wildfire nearby</span>');
+    if (al && al.a) tags.push(`<span class="tag warn">${al.a.length} weather alert${al.a.length > 1 ? 's' : ''}</span>`);
+    if (o.am) { const w = amShort.water[o.am.water[0]]; if (w) tags.push(`<span class="tag ${o.am.water[0] === 'yes' ? 'ok' : ''}">${esc(w)}</span>`); const t = amShort.toilet[o.am.toilet[0]]; if (t) tags.push(`<span class="tag">${esc(t)}</span>`); }
+    if (o.res) tags.push('<span class="tag">Reservable</span>');
+    if (favs.has(o.id)) tags.push('<span class="tag ok">★ Saved</span>');
+    const src = o.th ? `thumbs/${o.id}.webp` : o.img && o.img.length ? o.img[0] : '';
+    const img = src ? `<img src="${esc(src)}" alt=""" loading="lazy" onerror="this.outerHTML='<span class=&quot;ph&quot;>${phSvg.replace(/"/g, '&quot;')}No photo</span>'">` : `<span class="ph">${phSvg}No photo yet</span>`;
+    return `<li class="camp-card" data-id="${o.id}" tabindex="-1"><div class="thumb">${img}</div><div><h3>${esc(o.n)}</h3><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button><a href="place.html?id=${o.id}">Details${o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div></div></li>`;
+  }
+  function renderList() {
+    if (!listEl) return;
+    const all = campsInView();
+    const z = map.getZoom();
+    countEl.innerHTML = all.length ? `<b>${all.length.toLocaleString('en-US')}</b> campground${all.length === 1 ? '' : 's'} in view${z < 8 ? ' · zoom in to narrow the list' : ''}` : '<b>0</b> campgrounds in view';
+    listEl.innerHTML = all.length ? all.slice(0, listLimit).map(card).join('') : '<li class="empty-list">No campgrounds match in this part of the map. Zoom out, move the map, or clear a filter.</li>';
+    moreBtn.hidden = all.length <= listLimit;
+    moreBtn.textContent = `Show ${Math.min(40, all.length - listLimit)} more`;
+  }
+  let listT; const listSoon = () => { clearTimeout(listT); listT = setTimeout(() => { listLimit = 40; renderList(); }, 150); };
+  map.on('moveend', listSoon);
+  [fOpen, fWater, fRes, fPhoto].forEach(el => el.addEventListener('change', listSoon));
+  ['lyr-cg', 'lyr-fc'].forEach(id => document.getElementById(id).addEventListener('change', listSoon));
+  moreBtn.addEventListener('click', () => { listLimit += 40; renderList(); });
+  listEl.addEventListener('click', (ev) => {
+    if (ev.target.closest('a')) return;
+    const li = ev.target.closest('[data-id]'); if (!li) return;
+    const v = campIndex.get(li.dataset.id); if (v) zoomTo({ o: v.o, layer: v.k });
+  });
+  const hlMarker = (id, on) => { const v = campIndex.get(id); const el = v && v.o.marker && v.o.marker.getElement(); if (el) el.classList.toggle('hl', on); };
+  listEl.addEventListener('mouseover', (ev) => { const li = ev.target.closest('[data-id]'); if (li) hlMarker(li.dataset.id, true); });
+  listEl.addEventListener('mouseout', (ev) => { const li = ev.target.closest('[data-id]'); if (li && !li.contains(ev.relatedTarget)) hlMarker(li.dataset.id, false); });
+  renderList();
+
+  // ---------- Weather alerts by county + active wildfires (right column) ----------
+  let aFilter = 'all';
+  const sevClass = (s) => s === 'Extreme' || s === 'Severe' ? 'hi' : s === 'Minor' || s === 'Unknown' ? 'lo' : '';
+  function renderCounties() {
+    const box = document.getElementById('countyAlerts');
+    if (!ALERTS || !ALERTS.counties) { box.innerHTML = '<p class="muted">Weather alerts aren\'t available right now.</p>'; return; }
+    const html = ALERTS.counties.map(c => {
+      const seen = new Map();   // one line per kind of alert; several zones in a county often share it
+      c.a.forEach(id => { const a = ALERTS.nws[id]; if (!a || (aFilter === 'warn' && !/Warning/.test(a.e))) return; const k = a.e; const prev = seen.get(k); if (!prev || (a.ends || '') > (prev.ends || '')) seen.set(k, a); });
+      if (!seen.size) return '';
+      const items = [...seen.values()].map(a => `<li><span class="sv ${sevClass(a.sev)}"></span><span><b>${esc(a.e)}</b><span class="when">${a.ends ? 'Until ' + esc(fmtWhen(a.ends)) : 'In effect'} · <a href="${esc(a.url)}" target="_blank" rel="noopener">Details ↗</a></span></span></li>`).join('');
+      return `<div class="county"><button type="button" data-county="${esc(c.n)}">${esc(c.n)} County <small>${seen.size} alert${seen.size > 1 ? 's' : ''} · show on map</small></button><ul>${items}</ul></div>`;
+    }).join('');
+    box.innerHTML = html || `<p class="muted">No ${aFilter === 'warn' ? 'warnings' : 'weather alerts'} in California right now.</p>`;
+  }
+  document.getElementById('countyAlerts').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-county]'); if (!b) return;
+    const f = D.counties.features.find(x => x.properties.n === b.dataset.county);
+    if (f) { zoomTo({ f, layer: 'county' }); setSheet(false); }
+  });
+  document.querySelectorAll('[data-afilter]').forEach(b => b.addEventListener('click', () => {
+    aFilter = b.dataset.afilter; document.querySelectorAll('[data-afilter]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderCounties();
+  }));
+  function renderFires() {
+    const ul = document.getElementById('fireList');
+    if (!ALERTS) { ul.innerHTML = '<li class="muted">Wildfire data isn\'t available right now.</li>'; return; }
+    if (!ALERTS.fires.length) { ul.innerHTML = '<li class="muted">No active wildfires in or near California.</li>'; return; }
+    ul.innerHTML = ALERTS.fires.map((f, i) => `<li><button type="button" data-fire="${i}"><b>${esc(f.n)}</b>${f.ac ? Number(f.ac).toLocaleString('en-US') + ' acres' : 'Size unknown'}${f.pc != null ? ` · ${f.pc}% contained` : ''}</button></li>`).join('');
+  }
+  document.getElementById('fireList').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-fire]'); if (!b) return;
+    const f = ALERTS.fires[+b.dataset.fire]; if (f) { zoomTo({ f: { type: 'Feature', geometry: f.geom, properties: {} }, layer: 'fire' }); setSheet(false); }
   });
 
   // ---------- Deep links ----------
@@ -657,7 +733,7 @@
         document.getElementById('sharedName').textContent = L0.name;
         const ul = document.getElementById('sharedItems'); ul.innerHTML = '';
         L0.items.forEach(it => { const li = document.createElement('li'); li.innerHTML = `<button type="button" class="go"><span class="dot" style="background:var(--camp)"></span><span>${esc(it.n)}<span class="kind">${esc(it.k || '')}</span></span></button>`; li.firstChild.addEventListener('click', () => openSite(it.id)); ul.appendChild(li); });
-        box.hidden = false; if (narrow()) setSheet(true);
+        box.hidden = false; selectTab('mine');
       }).catch(() => toast('That shared list couldn\'t load.'));
   }
 })();
