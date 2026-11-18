@@ -30,7 +30,8 @@
         <input id="aPass" type="password" autocomplete="current-password" required>
         <button type="submit" class="btn" id="aGo">Sign in</button>
       </form>
-      <p class="a-links"><button type="button" class="link" data-view="forgot">Forgot password?</button><span>New here? <button type="button" class="link" data-view="signup">Create an account</button></span></p>`,
+      <p class="a-links"><button type="button" class="link" data-view="forgot">Forgot password?</button><span>New here? <button type="button" class="link" data-view="signup">Create an account</button></span></p>
+      <p class="a-links"><button type="button" class="link" data-view="resend">Didn't get the confirmation email?</button></p>`,
     signup: () => `
       <h2 id="authTitle">Create an account</h2>
       <p class="a-msg" id="aMsg">${esc(note || 'Save places, share lists and write reviews.')}</p>
@@ -43,6 +44,8 @@
         <label for="aPass">Password</label>
         <input id="aPass" type="password" autocomplete="new-password" required minlength="8" aria-describedby="aPassHelp">
         <small id="aPassHelp">At least 8 characters.</small>
+        <label for="aPass2">Confirm password</label>
+        <input id="aPass2" type="password" autocomplete="new-password" required minlength="8">
         <button type="submit" class="btn" id="aGo">Create account</button>
       </form>
       <p class="a-links"><span>Already have an account? <button type="button" class="link" data-view="signin">Sign in</button></span></p>`,
@@ -55,12 +58,23 @@
         <button type="submit" class="btn" id="aGo">Email me a reset link</button>
       </form>
       <p class="a-links"><button type="button" class="link" data-view="signin">Back to sign in</button></p>`,
+    resend: () => `
+      <h2 id="authTitle">Resend confirmation email</h2>
+      <p class="a-msg" id="aMsg">${esc(note || 'Enter the email you signed up with and we\'ll send the confirmation link again.')}</p>
+      <form id="aForm" novalidate>
+        <label for="aEmail">Email</label>
+        <input id="aEmail" type="email" autocomplete="email" required>
+        <button type="submit" class="btn" id="aGo">Resend confirmation email</button>
+      </form>
+      <p class="a-links"><button type="button" class="link" data-view="signin">Back to sign in</button></p>`,
     newpass: () => `
       <h2 id="authTitle">Set a new password</h2>
       <p class="a-msg" id="aMsg">Choose a new password for your account.</p>
       <form id="aForm" novalidate>
         <label for="aPass">New password</label>
         <input id="aPass" type="password" autocomplete="new-password" required minlength="8">
+        <label for="aPass2">Confirm new password</label>
+        <input id="aPass2" type="password" autocomplete="new-password" required minlength="8">
         <button type="submit" class="btn" id="aGo">Save password</button>
       </form>`,
     pickname: () => `
@@ -80,15 +94,24 @@
     $('aClose').onclick = () => dlg.close();
     dlg.querySelectorAll('[data-view]').forEach(b => b.onclick = () => show(b.dataset.view));
     $('aForm').addEventListener('submit', submit);
+    dlg.querySelectorAll('input[type=password]').forEach(inp => {
+      const wrap = document.createElement('div'); wrap.className = 'pw-wrap';
+      inp.before(wrap); wrap.appendChild(inp);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pw-eye'; b.textContent = 'Show';
+      b.setAttribute('aria-label', 'Show password'); b.setAttribute('aria-pressed', 'false');
+      b.onclick = () => { const on = inp.type === 'password'; inp.type = on ? 'text' : 'password'; b.textContent = on ? 'Hide' : 'Show'; b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Hide password' : 'Show password'); inp.focus(); };
+      wrap.appendChild(b);
+    });
     if (!dlg.open) dlg.showModal();
     const first = dlg.querySelector('input'); if (first) setTimeout(() => first.focus(), 30);
   }
+  const friendly = (m) => /rate limit|too many|over_email_send_rate_limit/i.test(m || '') ? 'Too many emails have been sent from this site in the last hour. Try again later.' : m;
   const say = (msg, bad) => { const m = $('aMsg'); m.textContent = msg; m.classList.toggle('bad', !!bad); };
   async function submit(ev) {
     ev.preventDefault();
     const go = $('aGo'), label = go.textContent; go.disabled = true; go.textContent = 'One moment…';
     try { await handlers[view](); }
-    catch (e) { say(e.message || 'Something went wrong. Try again.', true); }
+    catch (e) { say(friendly(e.message) || 'Something went wrong. Try again.', true); }
     finally { if ($('aGo')) { $('aGo').disabled = false; $('aGo').textContent = label; } }
   }
   const redirect = () => location.href.split('#')[0];
@@ -98,10 +121,12 @@
       if (!login || !password) throw new Error('Enter your username or email, and your password.');
       if (login.includes('@')) {
         const { error } = await sb.auth.signInWithPassword({ email: login, password });
-        if (error) throw new Error(/confirm/i.test(error.message) ? 'Confirm your email first: open the link we sent when you created your account.' : 'Wrong email or password.');
+        if (error && /confirm/i.test(error.message)) { show('resend', 'Your email isn\'t confirmed yet. Open the link we sent, or send it again here.'); $('aEmail').value = login; return; }
+        if (error) throw new Error('Wrong email or password.');
       } else {
         const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: login.toLowerCase(), password }) });
         const d = await r.json().catch(() => ({}));
+        if (!r.ok && /confirm/i.test(d.error || '')) { show('resend', 'Your email isn\'t confirmed yet. Open the link we sent, or enter your email to send it again.'); return; }
         if (!r.ok) throw new Error(d.error || 'Wrong username or password.');
         const { error } = await sb.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token });
         if (error) throw new Error('Signing in didn\'t finish. Try again.');
@@ -113,6 +138,7 @@
       if (!USER_RE.test(name)) throw new Error('Usernames are 3–20 characters: lowercase letters, numbers and underscores.');
       if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Enter a valid email address.');
       if (password.length < 8) throw new Error('Use a password of at least 8 characters.');
+      if (password !== $('aPass2').value) throw new Error('The two passwords don\'t match.');
       const { data: free, error: e1 } = await sb.rpc('username_available', { name });
       if (e1) throw new Error('Couldn\'t check that username. Try again in a moment.');
       if (!free) throw new Error('That username is taken. Try another.');
@@ -120,6 +146,14 @@
       if (error) throw new Error(/registered|exists/i.test(error.message) ? 'An account with that email already exists. Sign in instead.' : error.message);
       if (data.session) { dlg.close(); toast('Welcome, ' + name); return; }
       say('Almost done: check your email and open the confirmation link, then sign in here.');
+      $('aForm').hidden = true;
+    },
+    async resend() {
+      const email = $('aEmail').value.trim();
+      if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Enter the email you signed up with.');
+      const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirect() } });
+      if (error) throw new Error(error.message);
+      say('Sent. Check your inbox (and spam folder) for the confirmation link.');
       $('aForm').hidden = true;
     },
     async forgot() {
@@ -133,6 +167,7 @@
     async newpass() {
       const password = $('aPass').value;
       if (password.length < 8) throw new Error('Use a password of at least 8 characters.');
+      if (password !== $('aPass2').value) throw new Error('The two passwords don\'t match.');
       const { error } = await sb.auth.updateUser({ password });
       if (error) throw new Error(error.message);
       dlg.close(); toast('Password updated');
