@@ -50,3 +50,15 @@ drop policy if exists "Delete own shared lists" on public.shared_lists;
 create policy "Open a shared list by link" on public.shared_lists for select using (true);
 create policy "Create own shared lists" on public.shared_lists for insert with check (auth.uid() = user_id);
 create policy "Delete own shared lists" on public.shared_lists for delete using (auth.uid() = user_id);
+
+-- Table access for the website (anon = signed out, authenticated = signed in) and the scheduled
+-- jobs (service_role). Newer Supabase projects don't grant these automatically. Row-level security
+-- above still decides which rows each person can see or change.
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.feeds to anon, authenticated;
+grant select, insert, update, delete on public.feeds to service_role;
+grant select, insert, update, delete on public.favorites to authenticated;
+grant all on public.favorites to service_role;
+grant select on public.shared_lists to anon, authenticated;
+grant insert, delete on public.shared_lists to authenticated;
+grant all on public.shared_lists to service_role;
