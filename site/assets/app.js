@@ -201,7 +201,7 @@
     a.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${o.ll[0]},${o.ll[1]}" target="_blank" rel="noopener">Directions ↗</a>`);
     return `<div class="links">${a.join('')}</div>`;
   };
-  const dl = (o) => { let r = ''; if (o.fee) r += `<dt>Fees</dt><dd>${esc(o.fee)}</dd>`; if (o.stay) r += `<dt>Stay limit</dt><dd>${esc(o.stay)}</dd>`; if (o.ph) r += `<dt>Phone</dt><dd>${esc(o.ph)}</dd>`; return r ? `<dl>${r}</dl>` : ''; };
+  const dl = (o) => { let r = ''; if (o.stay) r += `<dt>Stay limit</dt><dd>${esc(o.stay)}</dd>`; if (o.ph) r += `<dt>Phone</dt><dd>${esc(o.ph)}</dd>`; return r ? `<dl>${r}</dl>` : ''; };
   const favs = new Map();   // site id -> saved row (filled after sign-in)
   // ---------- Live status + alerts in popups ----------
   let STATUS = null, ALERTS = null;
@@ -233,16 +233,14 @@
     cg: (o) => `<div class="pp"><span class="kindtag">BLM · ${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}${dl(o)}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'blm')}${wxSlot(o)}</div>`,
     fc: (o) => {
       let r = `<dt>Forest</dt><dd>${esc(o.forest)}</dd>`;
-      if (o.season) r += `<dt>Season</dt><dd>${esc(o.season)}</dd>`;
-      if (o.fee) r += `<dt>Fees</dt><dd>${esc(o.fee)}</dd>`;
+      if (o.season) r += `<dt>Open season</dt><dd>${esc(o.season)}</dd>`;
       if (o.cap) r += `<dt>Capacity</dt><dd>${o.cap} people</dd>`;
       return `<div class="pp"><span class="kindtag">National Forest · ${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}<dl>${r}</dl>${o.ri ? `<div class="resnote">${esc(o.ri)}</div>` : ''}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'fs')}${wxSlot(o)}</div>`;
     },
     th: (o) => `<div class="pp"><span class="kindtag">BLM trailhead</span>${titleRow(o)}${o.id ? live(o) : ''}${links(o)}${coords(o.ll)}${wxSlot(o)}</div>`,
     fh: (o) => {
       let r = `<dt>Forest</dt><dd>${esc(o.forest)}</dd>`;
-      if (o.season) r += `<dt>Season</dt><dd>${esc(o.season)}</dd>`;
-      if (o.fee) r += `<dt>Fees</dt><dd>${esc(o.fee)}</dd>`;
+      if (o.season) r += `<dt>Open season</dt><dd>${esc(o.season)}</dd>`;
       if (o.restr) r += `<dt>Rules</dt><dd>${esc(o.restr)}</dd>`;
       const lk = [];
       if (o.url) lk.push(`<a href="${esc(o.url)}" target="_blank" rel="noopener">Trail info ↗</a>`);

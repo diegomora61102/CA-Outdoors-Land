@@ -65,6 +65,26 @@ def clean(s, n=320):
   if len(s)>n: s=s[:n].rsplit(' ',1)[0].rstrip(',.;:')+'…'
   return s
 def ll(f): c=f['geometry']['coordinates']; return [round(c[1],5),round(c[0],5)]
+MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+def season_text(start, end):
+  """Forest Service open season as one phrase. Dates lose their (stale) year: 5/20/2024 -> May 20."""
+  def norm(v):
+    v=(v or '').strip()
+    if not v or v.lower() in ('none','n/a','na'): return ''
+    v=re.sub(r'<[^>]+>','',H.unescape(v)).strip().rstrip('.')
+    m=re.fullmatch(r'(\d{1,2})/(\d{1,2})(?:/\d{2,4})?',v)
+    if m and 1<=int(m.group(1))<=12: return '%s %d'%(MONTHS[int(m.group(1))-1],int(m.group(2)))
+    m=re.fullmatch(r'(\d{4})-(\d{2})-(\d{2}).*',v)
+    if m and 1<=int(m.group(2))<=12: return '%s %d'%(MONTHS[int(m.group(2))-1],int(m.group(3)))
+    return v
+  s,e=norm(start),norm(end)
+  yr=lambda v: re.search(r'year[\s-]*round|all year',v or '',re.I)
+  if yr(s) or yr(e) or (s.lower().startswith('jan') and e.lower().startswith('dec') and len(s)<=8 and len(e)<=9): return 'Year-round'
+  if s and e: return '%s – %s'%(s,e)
+  if s and len(s)<=20 and not re.search(r'\b(to|through|until|-)\b|open|close',s,re.I): return 'Opens %s'%s
+  if e: return 'Closes %s'%e
+  return s[:160]
+
 def imgs(h, n=6):
   """Photo URLs embedded in a description (Forest Service media, BLM Flickr), as https, skipping icons."""
   out=[]
@@ -210,7 +230,7 @@ for f in load('fscamp')['features']:
   txt=plain(p['recareadescription'],p['restrictions'],p['reservation_info'],p['accessibility'],p['feedescription'],i2.get('important_info'),i2.get('restrictions'),i2.get('site_contact_notes'))
   am=amen(txt,water=i2.get('water_availability') or inf.get('water_availability'),rest=i2.get('restroom_availability') or inf.get('restroom_availability'),packout=i2.get('pack_in_out'),
           primitive=p['markeractivity'] in ('Dispersed Camping',) or str(i2.get('development_scale') or '') in ('0','1'),notice_src=plain(i2.get('important_info'),i2.get('restrictions'),p['restrictions']))
-  fsc.append({'img':imgs(p['recareadescription']),'fid':str(inf['nrrs_id']) if inf.get('nrrs_id') else None,'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription'],1000),'season':nz(p['open_season_start'],120),'ri':ri,'restr':nz(p['restrictions'],700),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
+  fsc.append({'img':imgs(p['recareadescription']),'fid':str(inf['nrrs_id']) if inf.get('nrrs_id') else None,'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription'],1000),'season':season_text(p['open_season_start'],p['open_season_end']),'ri':ri,'restr':nz(p['restrictions'],700),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
 fsh=[]; seen=set()
 hk={'Trailhead':'Trailhead','Day Hiking':'Day hike','Backpacking':'Backpacking area','Viewing Scenery':'Scenic area'}
 for f in load('fshike')['features']:
@@ -225,7 +245,7 @@ for f in load('fshike')['features']:
   def nz2(v,n=200):
     v=clean(v,n); return '' if v.strip().rstrip('.').lower() in ('none','n/a','') else v
   o={'img':imgs(p['recareadescription']),'rid':str(p['recareaid']),'n':p['recareaname'].strip(),'ll':ll(f),'k':hk.get(p['markeractivity'],'Hiking'),'forest':p['forestname'],'d':nz2(p['recareadescription'],300),
-     'fee':nz2(p['feedescription'],1000),'season':nz2(p['open_season_start'],120),'restr':nz2(p['restrictions'],700),'url':i2.get('usda_portal_url') or p['recareaurl'] or '','am':am}
+     'fee':nz2(p['feedescription'],1000),'season':season_text(p['open_season_start'],p['open_season_end']),'restr':nz2(p['restrictions'],700),'url':i2.get('usda_portal_url') or p['recareaurl'] or '','am':am}
   o['id']='h'+hashlib.sha1((o['n']+'%.5f,%.5f'%tuple(o['ll'])).encode()).hexdigest()[:8]
   fsh.append(o)
 npsm=_c.OrderedDict()

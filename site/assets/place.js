@@ -85,7 +85,7 @@
   // Header
   $('pKind').textContent = kindName[kind] + (o.k && !/Camping$/.test(o.k) && kind !== 'ra' ? ' · ' + o.k : '');
   $('pName').textContent = o.n;
-  $('pSub').textContent = [o.forest || (kind === 'cg' || kind === 'ra' || kind === 'th' ? 'Bureau of Land Management' : ''), o.season ? 'Season: ' + o.season : ''].filter(Boolean).join(' · ');
+  $('pSub').textContent = [o.forest || (kind === 'cg' || kind === 'ra' || kind === 'th' ? 'Bureau of Land Management' : ''), o.season ? 'Open season: ' + o.season : ''].filter(Boolean).join(' · ');
   const rgSearch = 'https://www.recreation.gov/search?q=' + encodeURIComponent(o.n);
   const acts = [];
   if (o.res) acts.push(`<a class="main" href="${esc(o.res)}" target="_blank" rel="noopener">Reserve on Recreation.gov ↗</a>`);
@@ -126,7 +126,7 @@
   // About + facts
   let facts = '';
   const fact = (k, v) => { if (v) facts += `<dt>${k}</dt><dd>${esc(v)}</dd>`; };
-  fact('Forest', o.forest); fact('Season', o.season); fact('Fees', o.fee); fact('Stay limit', o.stay); fact('Capacity', o.cap ? o.cap + ' people' : '');
+  fact('Forest', o.forest); fact('Open season', o.season); fact('Fees', o.fee); fact('Stay limit', o.stay); fact('Capacity', o.cap ? o.cap + ' people' : '');
   fact('Reservations', o.ri); fact('Rules', o.restr); fact('Phone', o.ph);
   $('pAbout').innerHTML = `<h2>About</h2>${o.d ? `<p class="desc-full">${esc(o.d)}</p>` : '<p class="muted">No description from the managing agency.</p>'}${facts ? `<dl class="facts">${facts}</dl>` : ''}`;
 
