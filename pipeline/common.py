@@ -15,6 +15,13 @@ def get(url, tries=3, timeout=30):
             if i == tries - 1: return None
             time.sleep(1.5 * (i + 1))
 
+def require_supabase_in_ci():
+    """On GitHub Actions, stop early (successfully) until the Supabase secrets are added, so scheduled
+    runs don't spend Actions minutes on results that have nowhere to go."""
+    if os.environ.get('GITHUB_ACTIONS') == 'true' and not (os.environ.get('SUPABASE_URL') and os.environ.get('SUPABASE_SERVICE_ROLE_KEY')):
+        print('Supabase secrets (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are not set yet; skipping this run. See README, step 2.')
+        raise SystemExit(0)
+
 def now_iso(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 def km(a, b, c, d):

@@ -5,7 +5,7 @@ BLM does not publish open/closed status, so BLM sites have none.
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import upsert_feeds, pins, now_iso
+from common import require_supabase_in_ci, upsert_feeds, pins, now_iso
 from sources import layer, FS
 
 def fs_status():
@@ -14,6 +14,7 @@ def fs_status():
     return {str(f['attributes']['recareaid']): (f['attributes']['openstatus'] or '').lower() for f in d['features']}
 
 def main():
+    require_supabase_in_ci()
     by_rid = fs_status()
     s = {}
     for p in pins():

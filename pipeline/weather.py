@@ -9,7 +9,8 @@ nothing per click: the page only reads the stored results.
 """
 import json, math, os, sys, time, urllib.request, concurrent.futures as cf
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import upsert_feeds, ROOT
+from common import upsert_feeds, ROOT, require_supabase_in_ci
+require_supabase_in_ci()
 from datetime import datetime, timezone
 
 UA = {'User-Agent': '(ca-public-lands-map, weather-refresh)', 'Accept': 'application/geo+json'}

@@ -10,7 +10,7 @@ Writes the `alerts` feed:
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import get, upsert_feeds, pins, now_iso, km, in_geom, bbox, polys
+from common import require_supabase_in_ci, get, upsert_feeds, pins, now_iso, km, in_geom, bbox, polys
 from sources import layer, FS
 
 WFIGS = 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0'
@@ -19,6 +19,7 @@ SKIP = ('Small Craft', 'Gale', 'Marine', 'Hazardous Seas', 'Hurricane Force', 'S
 FIRE_MI = 10
 
 def main():
+    require_supabase_in_ci()
     P = pins(); sites = {}
     def add(pid, key, val):
         e = sites.setdefault(pid, {})
