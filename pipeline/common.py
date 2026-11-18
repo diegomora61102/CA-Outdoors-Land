@@ -71,8 +71,8 @@ def upsert_feeds(rows, out_dir=None):
     def send(b):
         body = json.dumps([{'key': r['key'], 'data': r['data'], 'updated_at': stamp} for r in b]).encode()
         req = urllib.request.Request(url.rstrip('/') + '/rest/v1/feeds', data=body, method='POST', headers={
-            'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates,return=minimal'})
+            'apikey': key, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal',
+            **({'Authorization': 'Bearer ' + key} if key.startswith('eyJ') else {})})   # new sb_secret_ keys: apikey header only
         for i in range(3):
             try:
                 urllib.request.urlopen(req, timeout=60).read(); return

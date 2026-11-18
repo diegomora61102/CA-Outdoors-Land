@@ -31,14 +31,14 @@ Clicking a place never calls a weather or alerts service: the jobs store results
 2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it.
 3. **Authentication → URL Configuration**: set *Site URL* to your website address (for example
    `https://ca-outdoors-land.pages.dev`) and add the same address under *Redirect URLs*.
-4. **Project Settings → API**: copy the *Project URL* and the *anon public* key into
+4. **Project Settings → API**: copy the *Project URL* and the *publishable* key (or legacy *anon* key) into
    `site/assets/config.js`. (The anon key is safe to publish; row-level security protects the data.)
 5. Optional: enable Google under **Authentication → Providers**, then set `googleSignIn: true` in `config.js`.
 
 ### 2. GitHub Actions secrets (lets the scheduled jobs write live data)
 In the repository: **Settings → Secrets and variables → Actions → New repository secret**:
 - `SUPABASE_URL`: the Project URL
-- `SUPABASE_SERVICE_ROLE_KEY`: *Project Settings → API → service_role* key. Keep this secret; it is
+- `SUPABASE_SERVICE_ROLE_KEY`: *Project Settings → API Keys → secret* key (`sb_secret_…`, or the legacy *service_role* key). Keep this secret; it is
   only used by the jobs, never in the website.
 
 Then run each workflow once by hand (**Actions → pick the workflow → Run workflow**) to fill the data.

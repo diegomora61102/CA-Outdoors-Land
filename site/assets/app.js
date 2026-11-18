@@ -276,11 +276,13 @@
 
   // ---------- Weather (read from the map's database; a refresh job fills it from NWS) ----------
   // ---------- Live feeds (weather, status, alerts) from Supabase; scheduled jobs keep them current ----------
+  // New-style Supabase keys (sb_publishable_...) go only in the apikey header; legacy anon JWTs also as a Bearer token.
+  const sbHeaders = () => { const k = CFG.supabaseAnonKey || ''; return /^eyJ/.test(k) ? { apikey: k, Authorization: 'Bearer ' + k } : { apikey: k }; };
   const feedCache = new Map();
   function feed(key) {
     if (!feedCache.has(key)) {
       const p = !CFG.supabaseUrl ? Promise.resolve(undefined) : Promise.race([
-        fetch(`${CFG.supabaseUrl}/rest/v1/feeds?key=eq.${encodeURIComponent(key)}&select=data`, { headers: { apikey: CFG.supabaseAnonKey, Authorization: 'Bearer ' + CFG.supabaseAnonKey } })
+        fetch(`${CFG.supabaseUrl}/rest/v1/feeds?key=eq.${encodeURIComponent(key)}&select=data`, { headers: sbHeaders() })
           .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))).then(rows => rows[0] ? rows[0].data : null),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
       p.catch(() => feedCache.delete(key));
@@ -648,7 +650,7 @@
   const params = new URLSearchParams(location.search);
   if (params.get('site')) openSite(params.get('site'));
   if (params.get('list') && CFG.supabaseUrl) {
-    fetch(`${CFG.supabaseUrl}/rest/v1/shared_lists?id=eq.${encodeURIComponent(params.get('list'))}&select=name,items`, { headers: { apikey: CFG.supabaseAnonKey, Authorization: 'Bearer ' + CFG.supabaseAnonKey } })
+    fetch(`${CFG.supabaseUrl}/rest/v1/shared_lists?id=eq.${encodeURIComponent(params.get('list'))}&select=name,items`, { headers: sbHeaders() })
       .then(r => r.json()).then(rows => {
         const L0 = rows && rows[0]; const box = document.getElementById('sharedList');
         if (!L0) { toast('That shared list wasn\'t found.'); return; }
