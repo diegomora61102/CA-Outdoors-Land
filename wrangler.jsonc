@@ -1,7 +1,7 @@
 // Cloudflare Workers deployment: serves the static site in ./site (no build step, no server code).
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "ca-outdoor-lands",
+  "name": "ca-outdoors-land",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./site",
