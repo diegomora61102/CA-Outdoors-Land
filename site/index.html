@@ -28,11 +28,24 @@
     </div>
     <section class="tabpanel" id="tab-camps" role="tabpanel" aria-labelledby="t-camps">
       <div class="list-head">
-        <p class="list-count" id="campCount" aria-live="polite">Loading campgrounds…</p>
+        <div class="list-top">
+          <p class="list-count" id="campCount" aria-live="polite">Loading campgrounds…</p>
+          <label class="sort"><span>Sort</span>
+            <select id="campSort">
+              <option value="az">Name A–Z</option>
+              <option value="za">Name Z–A</option>
+              <option value="rating">Highest rated</option>
+              <option value="reviews">Most reviewed</option>
+              <option value="open">Open first</option>
+              <option value="near">Nearest to map center</option>
+            </select>
+          </label>
+        </div>
         <div class="chips" role="group" aria-label="Filter campgrounds">
           <label class="chip-f"><input type="checkbox" id="f-open"><span>Open now</span></label>
           <label class="chip-f"><input type="checkbox" id="f-water"><span>Drinking water</span></label>
           <label class="chip-f"><input type="checkbox" id="f-res"><span>Reservable</span></label>
+          <label class="chip-f"><input type="checkbox" id="f-rated"><span>4★ &amp; up</span></label>
           <label class="chip-f"><input type="checkbox" id="f-photo"><span>Has photos</span></label>
         </div>
       </div>

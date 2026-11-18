@@ -152,7 +152,7 @@ for f in load('ridb')['features']:
   au=[a.upper() for a in acts]
   hk='HIKING' in au; cp='CAMPING' in au or 'Horse Camping'.upper() in au
   if not (hk or cp) or not f['geometry']: continue
-  fee=clean(p['RecAreaFeeDescription'],140)
+  fee=clean(p['RecAreaFeeDescription'],1000)
   nm=p['RecAreaName'].strip()
   if re.search(r'\btrail|loop\b|byway',nm,re.I): pk='Trail'
   elif re.search(r'campground|\bcamp\b|campsite',nm,re.I) and not re.search(r'patton|historic',nm,re.I): pk='Camp'
@@ -163,7 +163,7 @@ camps=[]
 for f in load('ridbcamp')['features']:
   p=f['properties']
   if not f['geometry']: continue
-  fee=clean(p['FacilityUseFeeDescription'],140)
+  fee=clean(p['FacilityUseFeeDescription'],1000)
   camps.append({'img':imgs(p['FacilityDescription']),'fid':(re.search(r'/(\d+)/?\d*$',p['BLMFacURL'] or '') or [None,None])[1],'am':amen(plain(p['FacilityDescription'],p['FacilityUseFeeDescription'],p['StayLimit']),notice_src=plain(p['FacilityDescription'])[:600]),'n':p['FacilityName'].strip(),'ll':ll(f),'k':p['FacilityTypeDescription'] or 'Campground','d':clean(p['FacilityDescription']),'fee':fee,'stay':clean(p['StayLimit'],100),'url':p['BLMFacURL'] or '','res':p['FacilityReservationURL'] or '','ph':p['FacilityPhone'] or '','src':'ridb'})
 def near(a,b): return abs(a[0]-b[0])<0.006 and abs(a[1]-b[1])<0.007
 th=[];info=[]
@@ -200,7 +200,7 @@ for f in load('fscamp')['features']:
   seen.add(key)
   inf=infra.get(p['infra_cn']) or {}
   res=inf.get('rec1stop_url') or (f"https://www.recreation.gov/camping/campgrounds/{inf['nrrs_id']}" if inf.get('nrrs_id') else '')
-  ri=clean(p['reservation_info'],160)
+  ri=clean(p['reservation_info'],700)
   if ri.strip().rstrip('.').lower() in ('none','n/a','na',''): ri=''
   if not res and re.search(r'recreation\.gov|877-444-6777|NRRS|reserv',(p['reservation_info'] or ''),re.I) and not re.search(r'not accepted|first come',(p['reservation_info'] or ''),re.I):
     res='https://www.recreation.gov/search?q='+urllib.parse.quote(p['recareaname'])
@@ -210,7 +210,7 @@ for f in load('fscamp')['features']:
   txt=plain(p['recareadescription'],p['restrictions'],p['reservation_info'],p['accessibility'],p['feedescription'],i2.get('important_info'),i2.get('restrictions'),i2.get('site_contact_notes'))
   am=amen(txt,water=i2.get('water_availability') or inf.get('water_availability'),rest=i2.get('restroom_availability') or inf.get('restroom_availability'),packout=i2.get('pack_in_out'),
           primitive=p['markeractivity'] in ('Dispersed Camping',) or str(i2.get('development_scale') or '') in ('0','1'),notice_src=plain(i2.get('important_info'),i2.get('restrictions'),p['restrictions']))
-  fsc.append({'img':imgs(p['recareadescription']),'fid':str(inf['nrrs_id']) if inf.get('nrrs_id') else None,'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription']),'season':nz(p['open_season_start'],120),'ri':ri,'restr':nz(p['restrictions'],200),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
+  fsc.append({'img':imgs(p['recareadescription']),'fid':str(inf['nrrs_id']) if inf.get('nrrs_id') else None,'rid':str(p['recareaid']),'am':am,'n':p['recareaname'].strip(),'ll':ll(f),'k':p['markeractivity'],'forest':p['forestname'],'d':nz(p['recareadescription'],300),'fee':nz(p['feedescription'],1000),'season':nz(p['open_season_start'],120),'ri':ri,'restr':nz(p['restrictions'],700),'st':p['openstatus'] if p['openstatus'] not in ('none','unknown','unreachable') else '','url':inf.get('usda_portal_url') or p['recareaurl'] or '','res':res,'water':inf.get('water_availability') or '','cap':int(inf.get('total_capacity') or 0)})
 fsh=[]; seen=set()
 hk={'Trailhead':'Trailhead','Day Hiking':'Day hike','Backpacking':'Backpacking area','Viewing Scenery':'Scenic area'}
 for f in load('fshike')['features']:
@@ -225,7 +225,7 @@ for f in load('fshike')['features']:
   def nz2(v,n=200):
     v=clean(v,n); return '' if v.strip().rstrip('.').lower() in ('none','n/a','') else v
   o={'img':imgs(p['recareadescription']),'rid':str(p['recareaid']),'n':p['recareaname'].strip(),'ll':ll(f),'k':hk.get(p['markeractivity'],'Hiking'),'forest':p['forestname'],'d':nz2(p['recareadescription'],300),
-     'fee':nz2(p['feedescription'],160),'season':nz2(p['open_season_start'],120),'restr':nz2(p['restrictions'],200),'url':i2.get('usda_portal_url') or p['recareaurl'] or '','am':am}
+     'fee':nz2(p['feedescription'],1000),'season':nz2(p['open_season_start'],120),'restr':nz2(p['restrictions'],700),'url':i2.get('usda_portal_url') or p['recareaurl'] or '','am':am}
   o['id']='h'+hashlib.sha1((o['n']+'%.5f,%.5f'%tuple(o['ll'])).encode()).hexdigest()[:8]
   fsh.append(o)
 npsm=_c.OrderedDict()

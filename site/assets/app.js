@@ -615,11 +615,24 @@
 
   // ---------- Campgrounds in view (left list) ----------
   const listEl = document.getElementById('campList'), countEl = document.getElementById('campCount'), moreBtn = document.getElementById('campMore');
-  const fOpen = document.getElementById('f-open'), fWater = document.getElementById('f-water'), fRes = document.getElementById('f-res'), fPhoto = document.getElementById('f-photo');
+  const fOpen = document.getElementById('f-open'), fWater = document.getElementById('f-water'), fRes = document.getElementById('f-res'), fPhoto = document.getElementById('f-photo'), fRated = document.getElementById('f-rated');
+  const sortSel = document.getElementById('campSort');
+  try { const s = localStorage.getItem('campSort'); if (s && sortSel.querySelector(`option[value="${s}"]`)) sortSel.value = s; } catch (e) {}
+  // Ratings from the site's own reviews: {siteId: {avg, n}}
+  const RATINGS = new Map();
+  if (CFG.supabaseUrl) fetch(`${CFG.supabaseUrl}/rest/v1/reviews?select=site_id,rating`, { headers: sbHeaders() })
+    .then(r => r.ok ? r.json() : []).then(rows => {
+      const acc = {}; rows.forEach(r => { const a = acc[r.site_id] || (acc[r.site_id] = [0, 0]); a[0] += r.rating; a[1]++; });
+      Object.entries(acc).forEach(([id, [sum, n]]) => RATINGS.set(id, { avg: sum / n, n }));
+      renderList();
+    }).catch(() => {});
+  // The selected place is pinned to the top of the list until it's closed
+  let pinnedId = null;
   let listLimit = 40;
   if (!SHOW_PHOTOS) { fPhoto.checked = false; fPhoto.closest('label').hidden = true; }
   const statusOf = (o) => (STATUS && STATUS.s[o.id]) || o.st || '';
-  const agencyOf = (v) => v.k === 'fc' ? v.o.forest : v.k === 'nc' ? (v.o.park || 'National Park') : 'Bureau of Land Management';
+  const agencyOf = (v) => v.k === 'fc' || v.k === 'fh' ? v.o.forest : v.k === 'nc' ? (v.o.park || 'National Park') : 'Bureau of Land Management';
+  const kindOf = { cg: 'Campground', fc: 'Campground', ra: 'Recreation area', th: 'Trailhead', fh: 'Trail', nc: 'Campground' };
   function campsInView() {
     const b = map.getBounds(), c = map.getCenter(), out = [];
     campIndex.forEach(v => {
@@ -629,14 +642,26 @@
       if (fWater.checked && !(v.o.am && v.o.am.water[0] === 'yes')) return;
       if (fRes.checked && !v.o.res) return;
       if (fPhoto.checked && !(v.o.th || (v.o.img && v.o.img.length))) return;
+      if (fRated.checked && !((RATINGS.get(v.o.id) || {}).avg >= 4)) return;
+      if (v.o.id === pinnedId) return;
       out.push({ ...v, d: nearKm([c.lat, c.lng], v.o.ll) });
     });
-    return out.sort((a, b) => a.d - b.d);
+    const byName = (a, b) => a.o.n.localeCompare(b.o.n, 'en', { sensitivity: 'base' });
+    const rt = (v) => RATINGS.get(v.o.id) || { avg: 0, n: 0 };
+    const openRank = (v) => { const st = statusOf(v.o), al = ALERTS && ALERTS.sites[v.o.id]; return al && al.c ? 3 : st === 'open' ? 0 : st ? 2 : 1; };
+    const sorts = {
+      az: byName, za: (a, b) => byName(b, a),
+      rating: (a, b) => (rt(b).avg - rt(a).avg) || (rt(b).n - rt(a).n) || byName(a, b),
+      reviews: (a, b) => (rt(b).n - rt(a).n) || (rt(b).avg - rt(a).avg) || byName(a, b),
+      open: (a, b) => (openRank(a) - openRank(b)) || byName(a, b),
+      near: (a, b) => a.d - b.d
+    };
+    return out.sort(sorts[sortSel.value] || byName);
   }
   const phSvg = '<svg width="34" height="28" viewBox="0 0 18 16" aria-hidden="true"><path d="M9 1.5 16.5 14.5H1.5Z" style="fill:none;stroke:currentColor;stroke-width:1.2;stroke-linejoin:round"/><path d="M9 8.5 11.5 14.5H6.5Z" style="fill:currentColor"/></svg>';
-  function card(v) {
+  function card(v, pinned) {
     const o = v.o, st = statusOf(o), al = ALERTS && ALERTS.sites[o.id];
-    const tags = [];
+    const tags = [], r = RATINGS.get(o.id);
     if (al && al.c) tags.push('<span class="tag bad">Temporarily closed</span>');
     else if (st) tags.push(`<span class="tag ${st === 'open' ? 'ok' : 'bad'}">${esc(st[0].toUpperCase() + st.slice(1))}</span>`);
     if (al && al.f) tags.push('<span class="tag bad">Wildfire nearby</span>');
@@ -646,20 +671,29 @@
     if (favs.has(o.id)) tags.push('<span class="tag ok">★ Saved</span>');
     const src = o.th ? `thumbs/${o.id}.webp` : o.img && o.img.length ? o.img[0] : '';
     const img = src ? `<img src="${esc(src)}" alt=""" loading="lazy" onerror="this.outerHTML='<span class=&quot;ph&quot;>${phSvg.replace(/"/g, '&quot;')}No photo</span>'">` : `<span class="ph">${phSvg}No photo yet</span>`;
-    return `<li class="camp-card${SHOW_PHOTOS ? '' : ' nophoto'}" data-id="${o.id}" tabindex="-1">${SHOW_PHOTOS ? `<div class="thumb">${img}</div>` : ''}<div><div class="title-row"><h3><a href="place.html?id=${o.id}">${esc(o.n)}</a></h3>${iconBtns(o)}</div><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button></div></div></li>`;
+    return `<li class="camp-card${SHOW_PHOTOS ? '' : ' nophoto'}${pinned ? ' pinned' : ''}" data-id="${o.id}" tabindex="-1">${SHOW_PHOTOS ? `<div class="thumb">${img}</div>` : ''}<div><div class="title-row"><h3><a href="place.html?id=${o.id}">${esc(o.n)}</a></h3>${iconBtns(o)}</div><div class="cc-sub">${pinned ? '<span class="pin-k">Selected</span> · ' : ''}${v.k !== 'fc' && v.k !== 'cg' ? esc(kindOf[v.k]) + ' · ' : ''}${esc(agencyOf(v))}${r ? ` · <span class="rate" aria-label="Rated ${r.avg.toFixed(1)} out of 5 from ${r.n} review${r.n > 1 ? 's' : ''}">★ ${r.avg.toFixed(1)} <small>(${r.n})</small></span>` : ''}</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button></div></div></li>`;
   }
   function renderList() {
     if (!listEl) return;
     const all = campsInView();
     const z = map.getZoom();
     countEl.innerHTML = all.length ? `<b>${all.length.toLocaleString('en-US')}</b> campground${all.length === 1 ? '' : 's'} in view${z < 8 ? ' · zoom in to narrow the list' : ''}` : '<b>0</b> campgrounds in view';
-    listEl.innerHTML = all.length ? all.slice(0, listLimit).map(card).join('') : '<li class="empty-list">No campgrounds match in this part of the map. Zoom out, move the map, or clear a filter.</li>';
+    const pv = pinnedId && pinIndex.get(pinnedId);
+    const top = pv ? card(pv, true) : '';
+    listEl.innerHTML = top + (all.length ? all.slice(0, listLimit).map(v => card(v)).join('') : (pv ? '' : '<li class="empty-list">No campgrounds match in this part of the map. Zoom out, move the map, or clear a filter.</li>'));
     moreBtn.hidden = all.length <= listLimit;
     moreBtn.textContent = `Show ${Math.min(40, all.length - listLimit)} more`;
   }
   let listT; const listSoon = () => { clearTimeout(listT); listT = setTimeout(() => { listLimit = 40; renderList(); }, 150); };
   map.on('moveend', listSoon);
-  [fOpen, fWater, fRes, fPhoto].forEach(el => el.addEventListener('change', listSoon));
+  [fOpen, fWater, fRes, fPhoto, fRated].forEach(el => el.addEventListener('change', listSoon));
+  sortSel.addEventListener('change', () => { try { localStorage.setItem('campSort', sortSel.value); } catch (e) {} listLimit = 40; renderList(); });
+  map.on('popupopen', (e) => {
+    const t = e.popup.getElement() && e.popup.getElement().querySelector('.title-row[data-site]');
+    pinnedId = t ? t.dataset.site : null; renderList();
+    if (pinnedId) document.getElementById('tab-camps').scrollTop = 0;
+  });
+  map.on('popupclose', () => { if (pinnedId) { pinnedId = null; renderList(); } });
   ['lyr-cg', 'lyr-fc'].forEach(id => document.getElementById(id).addEventListener('change', listSoon));
   moreBtn.addEventListener('click', () => { listLimit += 40; renderList(); });
   listEl.addEventListener('click', (ev) => {
@@ -715,7 +749,7 @@
     // Keep the popup clear of the floating filter panel when it's open
     const open = !mf.classList.contains('closed');
     e.popup.options.autoPanPaddingTopLeft = L.point(open ? mf.offsetWidth + 24 : 12, open && narrow() ? mf.offsetHeight + 24 : 12);
-    e.popup.options.autoPanPaddingBottomRight = L.point(12, 12);
+    e.popup.options.autoPanPaddingBottomRight = L.point(60, 12);   // keep clear of the zoom buttons
     if (e.popup._adjustPan) e.popup._adjustPan();
     const t = e.popup.getElement() && e.popup.getElement().querySelector('.title-row[data-site]');
     selected = t ? t.dataset.site : null; renderRight();
