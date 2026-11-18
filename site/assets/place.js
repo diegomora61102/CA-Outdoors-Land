@@ -93,7 +93,6 @@
   if (o.url) acts.push(`<a href="${esc(o.url)}" target="_blank" rel="noopener">Official page ↗</a>`);
   acts.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${o.ll[0]},${o.ll[1]}" target="_blank" rel="noopener">Directions ↗</a>`);
   acts.push(`<a href="${mapLink}">Show on map</a>`);
-  acts.push(`<button type="button" id="saveBtn">☆ Save</button>`, `<button type="button" id="shareBtn">Share</button>`);
   $('pActions').innerHTML = acts.join('');
 
   // Gallery + lightbox
@@ -172,7 +171,8 @@
   async function refreshSaved() {
     saved = false;
     if (sb && Account.user) { const { data } = await sb.from('favorites').select('site_id').eq('site_id', o.id); saved = !!(data && data.length); }
-    saveBtn.textContent = saved ? '★ Saved' : '☆ Save'; saveBtn.classList.toggle('on', saved);
+    saveBtn.textContent = saved ? '★' : '☆'; saveBtn.classList.toggle('on', saved); saveBtn.setAttribute('aria-pressed', saved);
+    saveBtn.title = saved ? 'Saved (click to remove)' : 'Save to my places'; saveBtn.setAttribute('aria-label', saved ? 'Remove from my places' : 'Save to my places');
   }
   saveBtn.addEventListener('click', async () => {
     if (!Account.user) return Account.openAuth('Sign in to save places to your list.');
@@ -207,7 +207,7 @@
     const mine = reviews.find(r => r.user_id === Account.user.id);
     box.innerHTML = `<form class="rev-form" id="rf"><b>${mine ? 'Update your review' : 'Write a review'}</b>
       <fieldset class="star-pick" id="rfStars"><legend class="muted">Your rating</legend>${[1, 2, 3, 4, 5].map(n => `<label><input type="radio" name="rating" value="${n}" ${mine && mine.rating === n ? 'checked' : ''} required><span>★</span></label>`).join('')}</fieldset>
-      <label for="rfName">Name shown with your review</label><input id="rfName" maxlength="60" required value="${esc(mine ? mine.author : '')}" placeholder="e.g. Sam R.">
+      <label for="rfName">Name shown with your review</label><input id="rfName" maxlength="60" required value="${esc(mine ? mine.author : (Account.username || ''))}" placeholder="e.g. Sam R.">
       <label for="rfVisited">When you visited (optional)</label><input id="rfVisited" maxlength="40" value="${esc(mine ? mine.visited || '' : '')}" placeholder="e.g. August 2026">
       <label for="rfBody">Your review</label><textarea id="rfBody" maxlength="2000" required placeholder="Site quality, shade, noise, road conditions, bugs, tips…">${esc(mine ? mine.body : '')}</textarea>
       <button type="submit" class="btn">${mine ? 'Update review' : 'Post review'}</button></form>`;

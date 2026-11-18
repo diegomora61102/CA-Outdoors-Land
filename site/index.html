@@ -24,7 +24,6 @@
   <aside class="left" id="left" aria-label="Campgrounds and map layers">
     <div class="tabs" role="tablist">
       <button type="button" role="tab" id="t-camps" aria-controls="tab-camps" aria-selected="true">Campgrounds</button>
-      <button type="button" role="tab" id="t-layers" aria-controls="tab-layers" aria-selected="false">Layers &amp; search</button>
       <button type="button" role="tab" id="t-mine" aria-controls="tab-mine" aria-selected="false">My places</button>
     </div>
     <section class="tabpanel" id="tab-camps" role="tabpanel" aria-labelledby="t-camps">
@@ -40,7 +39,25 @@
       <ul class="camp-list" id="campList"></ul>
       <button type="button" class="btn alt more" id="campMore" hidden>Show more</button>
     </section>
-    <section class="tabpanel scroll" id="tab-layers" role="tabpanel" aria-labelledby="t-layers" hidden>
+    <section class="tabpanel scroll" id="tab-mine" role="tabpanel" aria-labelledby="t-mine" hidden>
+    <section id="sharedList" hidden>
+      <h2>Shared list: <span id="sharedName"></span></h2>
+      <ul class="units" id="sharedItems"></ul>
+    </section>
+    <section id="mine">
+      <h2>My places (<span id="mineCount">0</span>)</h2>
+      <p class="muted" id="mineSignedOut">Sign in to save campgrounds, trailheads and areas here and share them as a list.</p>
+      <ul class="units" id="mineList"></ul>
+      <div class="share-row"><input class="search" id="listName" type="text" placeholder="List name (optional)" aria-label="Name for your shared list"><button type="button" class="btn" id="shareList">Share my list</button></div>
+    </section>
+    </section>
+  </aside>
+
+  <section class="mapwrap" id="map-section" aria-label="Map">
+    <div id="map" role="application" aria-label="Map of public land, campgrounds and trails in California"></div>
+    <div class="map-filters" id="mapFilters">
+      <div class="mf-head"><h2>Map filters</h2><button type="button" class="mf-toggle" id="mfToggle" aria-expanded="true" aria-controls="mfBody">Hide</button></div>
+      <div class="mf-body" id="mfBody">
     <section>
       <h2>Hiking &amp; camping</h2>
       <div class="layers">
@@ -80,23 +97,8 @@
       <input class="search" id="search" type="search" placeholder="Search campgrounds, trails, wilderness…" autocomplete="off" aria-label="Search places">
       <ul class="units" id="units"></ul>
     </section>
-    </section>
-    <section class="tabpanel scroll" id="tab-mine" role="tabpanel" aria-labelledby="t-mine" hidden>
-    <section id="sharedList" hidden>
-      <h2>Shared list: <span id="sharedName"></span></h2>
-      <ul class="units" id="sharedItems"></ul>
-    </section>
-    <section id="mine">
-      <h2>My places (<span id="mineCount">0</span>)</h2>
-      <p class="muted" id="mineSignedOut">Sign in to save campgrounds, trailheads and areas here and share them as a list.</p>
-      <ul class="units" id="mineList"></ul>
-      <div class="share-row"><input class="search" id="listName" type="text" placeholder="List name (optional)" aria-label="Name for your shared list"><button type="button" class="btn" id="shareList">Share my list</button></div>
-    </section>
-    </section>
-  </aside>
-
-  <section class="mapwrap" id="map-section" aria-label="Map">
-    <div id="map" role="application" aria-label="Map of public land, campgrounds and trails in California"></div>
+      </div>
+    </div>
     <div class="loading" id="loading" role="status">Loading the map…</div>
     <div class="readout" id="readout">Hover the map for coordinates</div>
   </section>
@@ -122,18 +124,7 @@
   </div>
 </footer>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-<dialog class="auth" id="authDlg" aria-labelledby="authTitle">
-  <button type="button" class="x" id="authClose" aria-label="Close">×</button>
-  <h2 id="authTitle">Sign in</h2>
-  <p id="authMsg">Get a sign-in link by email. No password needed.</p>
-  <form id="authForm">
-    <label for="authEmail">Email</label>
-    <input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com">
-    <button type="submit" class="btn" id="authSend">Email me a sign-in link</button>
-    <button type="button" class="btn alt" id="googleBtn" hidden>Continue with Google</button>
-  </form>
-  <p id="authSent" hidden><b>Check your email.</b> Open the link on this device to finish signing in.</p>
-</dialog>
+<dialog class="auth" id="authDlg" aria-labelledby="authTitle"></dialog>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/config.js"></script>

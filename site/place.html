@@ -27,7 +27,7 @@
     <section class="gallery" id="gallery" aria-label="Photos"></section>
     <header class="place-head">
       <p class="kicker" id="pKind"></p>
-      <h1 id="pName"></h1>
+      <div class="title-row big"><h1 id="pName"></h1><span class="name-icons"><button type="button" class="ico star" id="saveBtn" aria-pressed="false" aria-label="Save to my places" title="Save to my places">☆</button><button type="button" class="ico" id="shareBtn" aria-label="Share a link to this place" title="Share link"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v9M4.5 5 8 1.5 11.5 5M3 9v4.5h10V9" style="fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"/></svg></button></span></div>
       <p class="sub" id="pSub"></p>
       <div class="p-actions" id="pActions"></div>
     </header>
@@ -47,18 +47,7 @@
   </article>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-<dialog class="auth" id="authDlg" aria-labelledby="authTitle">
-  <button type="button" class="x" id="authClose" aria-label="Close">×</button>
-  <h2 id="authTitle">Sign in</h2>
-  <p id="authMsg">Get a sign-in link by email. No password needed.</p>
-  <form id="authForm">
-    <label for="authEmail">Email</label>
-    <input type="email" id="authEmail" required autocomplete="email" placeholder="you@example.com">
-    <button type="submit" class="btn" id="authSend">Email me a sign-in link</button>
-    <button type="button" class="btn alt" id="googleBtn" hidden>Continue with Google</button>
-  </form>
-  <p id="authSent" hidden><b>Check your email.</b> Open the link on this device to finish signing in.</p>
-</dialog>
+<dialog class="auth" id="authDlg" aria-labelledby="authTitle"></dialog>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/config.js"></script>

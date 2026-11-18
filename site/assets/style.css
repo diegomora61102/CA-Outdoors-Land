@@ -299,7 +299,8 @@ dialog.auth p { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(
 dialog.auth form { display: grid; gap: 8px; }
 dialog.auth label { font: 600 12px var(--sans); }
 dialog.auth input { padding: 9px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: var(--ink); font: 14px var(--sans); }
-dialog.auth .x { position: absolute; top: 8px; right: 10px; all: unset; cursor: pointer; font-size: 22px; line-height: 1; color: var(--ink-2); padding: 4px 8px; }
+dialog.auth .x { all: unset; position: absolute; top: 8px; right: 10px; cursor: pointer; font-size: 22px; line-height: 1; color: var(--ink-2); padding: 4px 8px; }
+dialog.auth { position: relative; }
 @media (max-width: 720px) { .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
 
 /* =========================================================================
@@ -429,3 +430,53 @@ a.act { text-decoration: none; display: inline-block; }
 
 .camp-card.nophoto { grid-template-columns: 1fr; padding: 10px 12px; }
 .chip-f[hidden] { display: none; }
+
+/* Floating map filters (the original layer panel) */
+.map-filters { position: absolute; z-index: 1000; top: 12px; left: 12px; width: 300px; max-height: calc(100% - 24px); display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+.mf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 8px 14px; border-bottom: 1px solid var(--line); }
+.mf-head h2 { margin: 0; font: 700 13px var(--sans); }
+.mf-toggle { padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); font: 600 12px var(--sans); cursor: pointer; }
+.mf-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mf-body { overflow-y: auto; padding: 0 14px 14px; display: grid; gap: 12px; align-content: start; }
+.map-filters.closed { width: auto; }
+.map-filters.closed .mf-body { display: none; }
+.map-filters.closed .mf-head { border-bottom: 0; }
+.mf-body section h2 { margin-top: 12px; }
+.tabs { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) { .map-filters { width: min(300px, calc(100% - 24px)); max-height: calc(100% - 24px); } }
+
+/* Name rows with save (star) and share icons */
+.title-row { display: flex; align-items: flex-start; gap: 6px; }
+.title-row h3 { flex: 1; min-width: 0; margin: 0; }
+.title-row h3 a { color: inherit; text-decoration: none; }
+.title-row h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.pp .title-row { margin-bottom: 8px; }
+.pp .title-row h3 a::after { content: " →"; color: var(--focus); font-weight: 600; }
+.name-icons { display: flex; gap: 2px; flex: none; }
+.ico { all: unset; box-sizing: border-box; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; cursor: pointer; color: var(--ink-2); font-size: 18px; line-height: 1; }
+.ico:hover { background: var(--panel-2); color: var(--ink); }
+.ico:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ico.star.on { color: #c79a12; }
+.camp-card .title-row h3 { font: 700 13.5px/1.25 var(--sans); }
+.camp-card .ico { width: 24px; height: 24px; font-size: 16px; }
+
+/* Selected place in the alerts column */
+.alert-sum.sel { background: var(--panel-2); border-color: var(--line); display: grid; gap: 2px; }
+.alert-sum.sel .sel-k { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.alert-sum.sel b { font-size: 14px; }
+.alert-sum.sel .sel-all { justify-self: start; margin-top: 8px; padding: 5px 12px; font-size: 12px; }
+.county > button:disabled { cursor: default; color: var(--ink); }
+.county li.muted { display: block; }
+.seg.small[hidden] { display: none; }
+
+/* Account dialog */
+dialog.auth form { gap: 6px; }
+dialog.auth small { color: var(--ink-2); font-size: 11.5px; margin-top: -2px; }
+dialog.auth .btn { margin-top: 8px; }
+dialog.auth .a-msg.bad { color: var(--nlcs); }
+dialog.auth .a-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 14px 0 0; font-size: 12.5px; }
+dialog.auth .link { all: unset; cursor: pointer; color: var(--focus); font-weight: 600; }
+dialog.auth .link:focus-visible { outline: 2px solid var(--focus); }
+.whoami { font: 600 13px var(--sans); color: var(--ink-2); }
+@media (max-width: 760px) { .whoami { display: none; } }

@@ -35,6 +35,17 @@ Clicking a place never calls a weather or alerts service: the jobs store results
    `site/assets/config.js`. (The anon key is safe to publish; row-level security protects the data.)
 5. Optional: enable Google under **Authentication → Providers**, then set `googleSignIn: true` in `config.js`.
 
+### 1b. Accounts (username or email + password)
+1. **SQL Editor**: run `supabase/03_usernames.sql` (usernames table and sign-up check).
+2. **Authentication → Sign In / Providers → Email**: keep *Email* enabled. *Confirm email* on means new
+   accounts must click a link before signing in.
+3. Supabase's built-in email sender only allows a few emails an hour. Before launch, set up your own
+   sender under **Authentication → Emails → SMTP Settings** (for example Resend or SendGrid).
+4. **Cloudflare → your Worker → Settings → Variables and Secrets → Add**: type *Secret*, name
+   `SUPABASE_SECRET_KEY`, value = the Supabase secret key. This lets the site turn a username into its
+   email on the server (`worker/index.js`), so emails are never exposed to browsers. Without it, people
+   can still sign in with their email.
+
 ### 2. GitHub Actions secrets (lets the scheduled jobs write live data)
 In the repository: **Settings → Secrets and variables → Actions → New repository secret**:
 - `SUPABASE_URL`: the Project URL

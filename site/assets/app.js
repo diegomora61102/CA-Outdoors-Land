@@ -218,7 +218,9 @@
     return h;
   }
   let canSave = false;   // true once Supabase accounts are configured
-  const actions = (o) => `${SHOW_PHOTOS && o.img && o.img.length ? `<a class="pp-photo" href="place.html?id=${o.id}"><img src="${esc(o.th ? 'thumbs/' + o.id + '.webp' : o.img[0])}" alt="Photo of ${esc(o.n)}" loading="lazy" onerror="this.parentNode.remove()"></a>` : ''}<div class="pp-actions">${canSave ? `<button type="button" class="act fav${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}">${favs.has(o.id) ? '★ Saved' : '☆ Save'}</button>` : ''}<button type="button" class="act" data-share="${o.id}">Share</button><a class="act" href="place.html?id=${o.id}">Details${SHOW_PHOTOS && o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div>`;
+  const shareSvg = '<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v9M4.5 5 8 1.5 11.5 5M3 9v4.5h10V9" style="fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"/></svg>';
+  const iconBtns = (o) => `<span class="name-icons">${canSave ? `<button type="button" class="ico star${favs.has(o.id) ? ' on' : ''}" data-fav="${o.id}" aria-pressed="${favs.has(o.id)}" aria-label="${favs.has(o.id) ? 'Remove from my places' : 'Save to my places'}" title="${favs.has(o.id) ? 'Saved (click to remove)' : 'Save to my places'}">${favs.has(o.id) ? '★' : '☆'}</button>` : ''}<button type="button" class="ico" data-share="${o.id}" aria-label="Share a link to ${esc(o.n)}" title="Share link">${shareSvg}</button></span>`;
+  const titleRow = (o) => !o.id ? `<h3>${esc(o.n)}</h3>` : `${SHOW_PHOTOS && o.img && o.img.length ? `<a class="pp-photo" href="place.html?id=${o.id}"><img src="${esc(o.th ? 'thumbs/' + o.id + '.webp' : o.img[0])}" alt="Photo of ${esc(o.n)}" loading="lazy" onerror="this.parentNode.remove()"></a>` : ''}<div class="title-row" data-site="${o.id}"><h3><a href="place.html?id=${o.id}" title="Open the full page for ${esc(o.n)}">${esc(o.n)}</a></h3>${iconBtns(o)}</div>`;
 
   const pops = {
     ra: (o) => {
@@ -226,17 +228,17 @@
       const kindName = { Area: 'Area', Spot: 'Single site', Trail: 'Trail', Camp: 'Camp' }[o.pk] || 'Area';
       const act = o.t === 'both' ? (disp ? 'hiking & dispersed camping' : 'hiking & camping') : o.t === 'hike' ? 'hiking' : (disp ? 'dispersed camping' : 'camping');
       const chips = o.acts.map(a => a === 'Camping' && disp ? 'Dispersed Camping' : a);
-      return `<div class="pp"><span class="kindtag">BLM recreation ${kindName.toLowerCase()} · ${act}</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}<div class="acts">${chips.map(a => `<span class="${/Hiking|Camping/.test(a) ? 'on' : ''}">${esc(a)}</span>`).join('')}</div>${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}${disp ? dispersedNote : ''}${dl(o)}${links(o)}${coords(o.ll)}${amenBlock(o, 'blm')}${nearBlock(o)}${wxSlot(o)}</div>`;
+      return `<div class="pp"><span class="kindtag">BLM recreation ${kindName.toLowerCase()} · ${act}</span>${titleRow(o)}${o.id ? live(o) : ''}<div class="acts">${chips.map(a => `<span class="${/Hiking|Camping/.test(a) ? 'on' : ''}">${esc(a)}</span>`).join('')}</div>${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}${disp ? dispersedNote : ''}${dl(o)}${links(o)}${coords(o.ll)}${amenBlock(o, 'blm')}${wxSlot(o)}</div>`;
     },
-    cg: (o) => `<div class="pp"><span class="kindtag">BLM · ${esc(o.k)}</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}${dl(o)}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'blm')}${nearBlock(o)}${wxSlot(o)}</div>`,
+    cg: (o) => `<div class="pp"><span class="kindtag">BLM · ${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}${dl(o)}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'blm')}${wxSlot(o)}</div>`,
     fc: (o) => {
       let r = `<dt>Forest</dt><dd>${esc(o.forest)}</dd>`;
       if (o.season) r += `<dt>Season</dt><dd>${esc(o.season)}</dd>`;
       if (o.fee) r += `<dt>Fees</dt><dd>${esc(o.fee)}</dd>`;
       if (o.cap) r += `<dt>Capacity</dt><dd>${o.cap} people</dd>`;
-      return `<div class="pp"><span class="kindtag">National Forest · ${esc(o.k)}</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}<dl>${r}</dl>${o.ri ? `<div class="resnote">${esc(o.ri)}</div>` : ''}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'fs')}${nearBlock(o)}${wxSlot(o)}</div>`;
+      return `<div class="pp"><span class="kindtag">National Forest · ${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}<dl>${r}</dl>${o.ri ? `<div class="resnote">${esc(o.ri)}</div>` : ''}${links(o, true)}${coords(o.ll)}${amenBlock(o, 'fs')}${wxSlot(o)}</div>`;
     },
-    th: (o) => `<div class="pp"><span class="kindtag">BLM trailhead</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}${links(o)}${coords(o.ll)}${nearBlock(o)}${wxSlot(o)}</div>`,
+    th: (o) => `<div class="pp"><span class="kindtag">BLM trailhead</span>${titleRow(o)}${o.id ? live(o) : ''}${links(o)}${coords(o.ll)}${wxSlot(o)}</div>`,
     fh: (o) => {
       let r = `<dt>Forest</dt><dd>${esc(o.forest)}</dd>`;
       if (o.season) r += `<dt>Season</dt><dd>${esc(o.season)}</dd>`;
@@ -245,9 +247,9 @@
       const lk = [];
       if (o.url) lk.push(`<a href="${esc(o.url)}" target="_blank" rel="noopener">Trail info ↗</a>`);
       lk.push(`<a href="https://www.google.com/maps/dir/?api=1&destination=${o.ll[0]},${o.ll[1]}" target="_blank" rel="noopener">Directions ↗</a>`);
-      return `<div class="pp"><span class="kindtag">National Forest · ${esc(o.k)}</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}<dl>${r}</dl><div class="links">${lk.join('')}</div>${coords(o.ll)}${amenBlock(o, 'fs')}${nearBlock(o)}${wxSlot(o)}</div>`;
+      return `<div class="pp"><span class="kindtag">National Forest · ${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${o.d ? `<p class="desc">${esc(o.d)}</p>` : ''}<dl>${r}</dl><div class="links">${lk.join('')}</div>${coords(o.ll)}${amenBlock(o, 'fs')}${wxSlot(o)}</div>`;
     },
-    vc: (o) => `<div class="pp"><span class="kindtag">${esc(o.k)}</span><h3>${esc(o.n)}</h3>${o.id ? live(o) + actions(o) : ''}${links(o)}${coords(o.ll)}</div>`
+    vc: (o) => `<div class="pp"><span class="kindtag">${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${links(o)}${coords(o.ll)}</div>`
   };
   const recSets = { ra: RC.sites, fh: FS.fsh, fc: FS.fsc, cg: RC.camps, th: RC.th, vc: RC.info };
   Object.entries(recSets).forEach(([k, arr]) => {
@@ -421,35 +423,10 @@
   const kindName = { BLM_NM: 'National Monument', BLM_NCA: 'National Conservation Area', BLM_NA: 'Outstanding Natural Area', BLM_FR: 'Forest Reserve', BLM_NSA: 'National Scenic Area' };
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  map.on('click', (e) => {
-    buildIdx();
-    const x = e.latlng.lng, y = e.latlng.lat;
-    const blm = hit(IDX.blm, x, y);
-    const npsU = blm ? null : hit(IDX.nps, x, y);
-    const fsL = blm || npsU ? null : hit(IDX.usfs, x, y);
-    const forest = hit(IDX.forests, x, y);
-    const fo = hit(IDX.fo, x, y);
-    const county = hit(IDX.counties, x, y);
-    const nlcs = hit(IDX.nlcs, x, y), wild = hit(IDX.wild, x, y), wsa = hit(IDX.wsa, x, y);
-    const st = county ? 'California' : (hit(IDX.neighbors, x, y) ? { '32': 'Nevada', '41': 'Oregon', '04': 'Arizona' }[hit(IDX.neighbors, x, y).properties.s] : null);
-    let rows = '';
-    const lake = hit(IDX.lakes, x, y);
-    if (lake && lake.properties.n) rows += `<dt>Water</dt><dd>${esc(lake.properties.n)}${lake.properties.r ? ' (reservoir)' : ''}</dd>`;
-    if (npsU) rows += `<dt>Park unit</dt><dd>${esc(npsU.properties.n)}</dd>`;
-    if (forest && (fsL || !blm)) rows += `<dt>Forest</dt><dd>${esc(forest.properties.n)}${fsL ? '' : ' <span style="color:var(--ink-2)">(inside boundary)</span>'}</dd>`;
-    if (fo && blm) rows += `<dt>Field office</dt><dd>${esc(fo.properties.n)}<br><span style="color:var(--ink-2)">${esc(fo.properties.d || '')}</span></dd>`;
-    if (nlcs) rows += `<dt>Designation</dt><dd>${esc(nlcs.properties.n)}</dd>`;
-    if (wild) rows += `<dt>Wilderness</dt><dd>${esc(wild.properties.n)}${wild.properties.y ? ` <span style="color:var(--ink-2)">(${wild.properties.y})</span>` : ''}</dd>`;
-    if (wsa) rows += `<dt>Study area</dt><dd>${esc(wsa.properties.n)}</dd>`;
-    if (county) rows += `<dt>County</dt><dd>${esc(county.properties.n)} County</dd>`;
-    else if (st) rows += `<dt>State</dt><dd>${st}</dd>`;
-    const status = blm
-      ? `<div class="pp-status"><span class="sw blm"></span>BLM public land</div>`
-      : npsU ? `<div class="pp-status"><span class="sw nps"></span>National Park Service land</div>`
-      : fsL ? `<div class="pp-status"><span class="sw usfs"></span>National Forest land</div>`
-      : `<div class="pp-status"><span class="sw off"></span>Not BLM, Forest or Park land</div>`;
-    const html = `<div class="pp">${status}${rows ? `<dl>${rows}</dl>` : ''}<div class="coords">${y.toFixed(5)}°, ${x.toFixed(5)}°</div></div>`;
-    L.popup({ maxWidth: 300 }).setLatLng(e.latlng).setContent(html).openOn(map);
+  // Clicking empty map (or pressing Esc) clears the selected place; it doesn't drop a point.
+  map.on('click', () => map.closePopup());
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !document.querySelector('dialog[open]') && map._popup && map._popup.isOpen()) map.closePopup();
   });
 
   const syncZoom = () => document.getElementById('map').classList.toggle('far', map.getZoom() < (narrow() ? 7 : 6.25));
@@ -513,7 +490,12 @@
 
   // ---------- Left-column tabs ----------
   const mapSection = document.getElementById('map-section');
-  const tabs = { camps: 't-camps', layers: 't-layers', mine: 't-mine' };
+  const tabs = { camps: 't-camps', mine: 't-mine' };
+  // Floating map filters (layer switches, basemap, search): open on wide screens, tucked away on phones
+  const mf = document.getElementById('mapFilters'), mfBtn = document.getElementById('mfToggle');
+  function setFilters(open) { mf.classList.toggle('closed', !open); mfBtn.setAttribute('aria-expanded', open); mfBtn.textContent = open ? 'Hide' : 'Show'; }
+  mfBtn.addEventListener('click', () => setFilters(mf.classList.contains('closed')));
+  setFilters(!narrow());
   function selectTab(name) {
     Object.entries(tabs).forEach(([k, id]) => {
       const on = k === name; document.getElementById(id).setAttribute('aria-selected', on);
@@ -623,12 +605,12 @@
       if (nFire) parts.push(`${nFire} near an active wildfire`);
       if (nWx) parts.push(`${nWx} under a weather alert`);
       const el = document.getElementById('alertSum');
-      el.innerHTML = parts.length ? `<b>Right now:</b> ${parts.join(' · ')}. Open a place for details. <span class="upd">Checked ${esc(fmtWhen(ALERTS.updated))}</span>` : `No closures, wildfires or weather alerts at mapped sites. <span class="upd">Checked ${esc(fmtWhen(ALERTS.updated))}</span>`;
-      el.hidden = false;
+      sumHtml = parts.length ? `<b>Right now:</b> ${parts.join(' · ')}. Open a place for details. <span class="upd">Checked ${esc(fmtWhen(ALERTS.updated))}</span>` : `No closures, wildfires or weather alerts at mapped sites. <span class="upd">Checked ${esc(fmtWhen(ALERTS.updated))}</span>`;
+      el.innerHTML = sumHtml; el.hidden = false;
       document.getElementById('cnt-fire').textContent = ALERTS.fires.length;
     }
     const fe = document.getElementById('lyr-fire'); setLayer('fire', fe.checked); fe.addEventListener('change', () => setLayer('fire', fe.checked));
-    refreshOpenPopup(); renderList(); renderCounties(); renderFires();
+    refreshOpenPopup(); renderList(); renderRight();
   });
 
   // ---------- Campgrounds in view (left list) ----------
@@ -664,7 +646,7 @@
     if (favs.has(o.id)) tags.push('<span class="tag ok">★ Saved</span>');
     const src = o.th ? `thumbs/${o.id}.webp` : o.img && o.img.length ? o.img[0] : '';
     const img = src ? `<img src="${esc(src)}" alt=""" loading="lazy" onerror="this.outerHTML='<span class=&quot;ph&quot;>${phSvg.replace(/"/g, '&quot;')}No photo</span>'">` : `<span class="ph">${phSvg}No photo yet</span>`;
-    return `<li class="camp-card${SHOW_PHOTOS ? '' : ' nophoto'}" data-id="${o.id}" tabindex="-1">${SHOW_PHOTOS ? `<div class="thumb">${img}</div>` : ''}<div><h3>${esc(o.n)}</h3><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button><a href="place.html?id=${o.id}">Details${SHOW_PHOTOS && o.img && o.img.length > 1 ? ' & photos' : ''} →</a></div></div></li>`;
+    return `<li class="camp-card${SHOW_PHOTOS ? '' : ' nophoto'}" data-id="${o.id}" tabindex="-1">${SHOW_PHOTOS ? `<div class="thumb">${img}</div>` : ''}<div><div class="title-row"><h3><a href="place.html?id=${o.id}">${esc(o.n)}</a></h3>${iconBtns(o)}</div><div class="cc-sub">${esc(agencyOf(v))} · ${(v.d / 1.609).toFixed(1)} mi from center</div><div class="cc-tags">${tags.join('')}</div><div class="cc-act"><button type="button" data-show="${o.id}">Show on map</button></div></div></li>`;
   }
   function renderList() {
     if (!listEl) return;
@@ -682,6 +664,8 @@
   moreBtn.addEventListener('click', () => { listLimit += 40; renderList(); });
   listEl.addEventListener('click', (ev) => {
     if (ev.target.closest('a')) return;
+    const f = ev.target.closest('[data-fav]'); if (f) { toggleFav(f.dataset.fav); return; }
+    const sh = ev.target.closest('[data-share]'); if (sh) { const v = pinIndex.get(sh.dataset.share); shareLink(siteUrl(sh.dataset.share), v ? v.o.n : 'California place'); return; }
     const li = ev.target.closest('[data-id]'); if (!li) return;
     const v = campIndex.get(li.dataset.id); if (v) zoomTo({ o: v.o, layer: v.k });
   });
@@ -691,7 +675,52 @@
   renderList();
 
   // ---------- Weather alerts by county + active wildfires (right column) ----------
-  let aFilter = 'all';
+  let aFilter = 'all', sumHtml = '', selected = null;
+  // ---------- Selected place: the right column narrows to that place and its county ----------
+  const alertLi = (a) => `<li><span class="sv ${sevClass(a.sev)}"></span><span><b>${esc(a.e)}</b><span class="when">${a.ends ? 'Until ' + esc(fmtWhen(a.ends)) : 'In effect'} · <a href="${esc(a.url)}" target="_blank" rel="noopener">Details ↗</a></span></span></li>`;
+  function renderSelected(id) {
+    const v = pinIndex.get(id); if (!v) return;
+    buildIdx();
+    const cty = hit(IDX.counties, v.o.ll[1], v.o.ll[0]), cname = cty ? cty.properties.n : null;
+    const sum = document.getElementById('alertSum'), box = document.getElementById('countyAlerts'), seg = document.querySelector('.seg.small');
+    seg.hidden = true;
+    sum.hidden = false;
+    sum.className = 'alert-sum sel';
+    sum.innerHTML = `<span class="sel-k">Selected</span><b>${esc(v.o.n)}</b>${cname ? `<span class="upd">${esc(cname)} County</span>` : ''}<button type="button" class="btn alt sel-all" id="showAllAlerts">Show all counties</button>`;
+    document.getElementById('showAllAlerts').onclick = () => map.closePopup();
+    if (!ALERTS) { box.innerHTML = '<p class="muted">Weather alerts aren\'t available right now.</p>'; return; }
+    const al = ALERTS.sites[id] || {}, here = new Map(), seen = new Set();
+    let siteHtml = '';
+    if (al.c) siteHtml += '<li><span class="sv hi"></span><span><b>Temporarily closed</b><span class="when">Forest Service closure</span></span></li>';
+    (al.f || []).forEach(([i, mi]) => { const f = ALERTS.fires[i]; if (f) siteHtml += `<li><span class="sv hi"></span><span><b>${esc(f.n)}</b><span class="when">${mi === 0 ? 'Site is inside the fire area' : mi + ' mi away'}${f.pc != null ? ' · ' + f.pc + '% contained' : ''}</span></span></li>`; });
+    (al.a || []).forEach(aid => { const a = ALERTS.nws[aid]; if (a && !here.has(a.e)) here.set(a.e, a); });
+    here.forEach(a => { seen.add(a.e); siteHtml += alertLi(a); });
+    const c = (ALERTS.counties || []).find(x => x.n === cname);
+    const more = new Map();
+    if (c) c.a.forEach(aid => { const a = ALERTS.nws[aid]; if (a && !seen.has(a.e) && !more.has(a.e)) more.set(a.e, a); });
+    box.innerHTML = `<div class="county"><button type="button" tabindex="-1" disabled>At this ${v.k === 'fh' || v.k === 'th' ? 'trail' : v.k === 'ra' ? 'area' : 'campground'}</button><ul>${siteHtml || '<li class="muted">No alerts here right now.</li>'}</ul></div>`
+      + (cname ? `<div class="county"><button type="button" data-county="${esc(cname)}">Elsewhere in ${esc(cname)} County <small>show county</small></button><ul>${more.size ? [...more.values()].map(alertLi).join('') : '<li class="muted">No other alerts in the county.</li>'}</ul></div>` : '');
+    const ul = document.getElementById('fireList');
+    const near = (al.f || []).map(([i, mi]) => [ALERTS.fires[i], mi, i]).filter(t => t[0]);
+    ul.innerHTML = near.length ? near.map(([f, mi, i]) => `<li><button type="button" data-fire="${i}"><b>${esc(f.n)}</b>${mi === 0 ? 'At this site' : mi + ' mi away'}${f.ac ? ' · ' + Number(f.ac).toLocaleString('en-US') + ' acres' : ''}</button></li>`).join('') : '<li class="muted">No active wildfires within 10 miles.</li>';
+  }
+  function renderRight() {
+    if (selected) return renderSelected(selected);
+    const sum = document.getElementById('alertSum'); sum.className = 'alert-sum';
+    sum.innerHTML = sumHtml; sum.hidden = !sumHtml;
+    document.querySelector('.seg.small').hidden = false;
+    renderCounties(); renderFires();
+  }
+  map.on('popupopen', (e) => {
+    // Keep the popup clear of the floating filter panel when it's open
+    const open = !mf.classList.contains('closed');
+    e.popup.options.autoPanPaddingTopLeft = L.point(open ? mf.offsetWidth + 24 : 12, open && narrow() ? mf.offsetHeight + 24 : 12);
+    e.popup.options.autoPanPaddingBottomRight = L.point(12, 12);
+    if (e.popup._adjustPan) e.popup._adjustPan();
+    const t = e.popup.getElement() && e.popup.getElement().querySelector('.title-row[data-site]');
+    selected = t ? t.dataset.site : null; renderRight();
+  });
+  map.on('popupclose', () => { if (selected) { selected = null; renderRight(); } });
   const sevClass = (s) => s === 'Extreme' || s === 'Severe' ? 'hi' : s === 'Minor' || s === 'Unknown' ? 'lo' : '';
   function renderCounties() {
     const box = document.getElementById('countyAlerts');

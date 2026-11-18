@@ -1,11 +1,19 @@
-// Cloudflare Workers deployment: serves the static site in ./site (no build step, no server code).
+// Cloudflare Worker: serves the static site in ./site, and runs worker/index.js only for /api/* (username sign-in).
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "ca-outdoors-land",
+  "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "single-page-application"
+  },
+  "vars": {
+    "SUPABASE_URL": "https://jkofqhhyimfuidxrvjcn.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_gaBERIFx4Greu75xZ8wP1Q_C8JYSYxB"
   }
+  // Secret (set in the Cloudflare dashboard, never here): SUPABASE_SECRET_KEY
 }

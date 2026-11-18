@@ -70,3 +70,8 @@ body.place-page { overflow: auto; background: var(--panel-2); }
   .gallery button:first-child { grid-column: 1 / -1; grid-row: auto; }
   .gallery button:nth-child(n+4) { display: none; }
 }
+
+.title-row.big { align-items: center; gap: 8px; }
+.title-row.big h1 { flex: initial; }
+.title-row.big .ico { width: 38px; height: 38px; font-size: 26px; border: 1px solid var(--line); background: var(--panel); }
+.title-row.big .ico.star.on { color: #c79a12; border-color: var(--blm-edge); }
