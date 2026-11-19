@@ -307,5 +307,14 @@ def in_ca(lat,lon): return any(_inring(lon,lat,r) for r in _ca)
 lakelabels=[[n,v[0],v[1],round(lk[n]['a']/1e6,1)] for n,v in lab.items() if lk[n]['a']>=4e6 and not re.search(r'\bRiv\b|River',n) and in_ca(v[0],v[1])]
 out3={'fsh':fsh,'lakes':lakes,'lakeLabels':lakelabels,'fsc':fsc,'nps':npsfc,'usfs':usfs,'forests':forests,'hwy':hwfc}
 save('fs.json', out3)
+# Lighter copies of the heaviest layers for zoomed-out views (see simplify.py)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import simplify
+# Statewide view (zoom < 8): one pixel is about 1 km, so 0.008 degrees is invisible. Regional (8-10): 0.002.
+for level,tol in (('lo',0.008),('mid',0.002)):
+  L={'blm':simplify.polygons(out['blm'],tol),'usfs':simplify.polygons(out3['usfs'],tol),
+     'lakes':simplify.polygons(out3['lakes'],tol),'hwy':simplify.lines(out3['hwy'],tol)}
+  print('lod',level,{k:simplify.points(v) for k,v in L.items()},file=sys.stderr)
+  save('lod_%s.json'%level, L)
 # Small file of just the places, for the campground pages
 save('places.json', {'ra':sites,'cg':camps,'th':th,'fc':fsc,'fh':fsh})

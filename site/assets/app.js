@@ -2,9 +2,9 @@
   const CFG = window.APP_CONFIG || {};
   const SHOW_PHOTOS = !!CFG.showPhotos;
   const loading = document.getElementById('loading');
-  let D, RC, FS;
+  let D, RC, FS, LOD_LO;
   try {
-    [D, RC, FS] = await Promise.all(['land', 'rec', 'fs'].map(n => fetch('data/' + n + '.json').then(r => { if (!r.ok) throw new Error(n); return r.json(); })));
+    [D, RC, FS, LOD_LO] = await Promise.all(['land', 'rec', 'fs', 'lod_lo'].map(n => fetch('data/' + n + '.json').then(r => { if (!r.ok) throw new Error(n); return r.json(); })));
   } catch (e) { loading.textContent = 'The map data couldn\'t load. Check your connection, then reload the page.'; return; }
   loading.hidden = true;
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -55,21 +55,48 @@
   const layers = {};
   layers.neighbor = L.geoJSON(D.neighbors, opt('base'));
   layers.county = L.geoJSON(D.counties, opt('base'));
-  layers.blm = L.geoJSON(D.blm, opt('blm', { smoothFactor: 0.6 }));
+  // Heaviest layers come in three versions: statewide (zoom < 8), regional (8-10) and full detail (10+).
+  const LODS = { lo: LOD_LO, mid: null };
+  let midLoading = false;
+  const hwSort = (fc, noState) => ({ type: 'FeatureCollection', features: fc.features.slice().sort((a, b) => ({ st: 0, us: 1, fwy: 2 })[a.properties.c] - ({ st: 0, us: 1, fwy: 2 })[b.properties.c]).filter(f => !noState || f.properties.c !== 'st') });
+  const lodDefs = {   // hwyCase must come before hwy so the white casing draws underneath
+    blm: { pane: 'blm', extra: { smoothFactor: 0.6 }, data: lv => lv === 'full' ? D.blm : LODS[lv].blm },
+    usfs: { pane: 'agency', extra: { smoothFactor: 0.8 }, data: lv => lv === 'full' ? FS.usfs : LODS[lv].usfs },
+    lakes: { pane: 'water', data: lv => lv === 'full' ? FS.lakes : LODS[lv].lakes },
+    hwyCase: { pane: 'roads', data: lv => hwSort(lv === 'full' ? FS.hwy : LODS[lv].hwy, true) },
+    hwy: { pane: 'roads', data: lv => hwSort(lv === 'full' ? FS.hwy : LODS[lv].hwy, false) }
+  };
+  const lodCache = {}, lodCur = {};
+  Object.keys(lodDefs).forEach(k => { layers[k] = L.featureGroup(); });
+  function syncLod() {
+    const z = map.getZoom();
+    let lv = z < 8 ? 'lo' : z < 10 ? 'mid' : 'full';
+    if (lv === 'mid' && !LODS.mid) {
+      lv = 'lo';
+      if (!midLoading) { midLoading = true; fetch('data/lod_mid.json').then(r => r.json()).then(d => { LODS.mid = d; syncLod(); }).catch(() => { midLoading = false; }); }
+    }
+    let changed = false;
+    Object.entries(lodDefs).forEach(([k, def]) => {
+      if (lodCur[k] === lv) return;
+      const id = k + '|' + lv;
+      if (!lodCache[id]) lodCache[id] = L.geoJSON(def.data(lv), opt(def.pane, def.extra));
+      layers[k].clearLayers(); layers[k].addLayer(lodCache[id]); lodCur[k] = lv; changed = true;
+    });
+    if (changed && typeof applyStyles === 'function' && layers.tr) applyStyles();
+  }
+  syncLod();
+  map.on('zoomend', syncLod);
   layers.nlcs = L.geoJSON(D.nlcs, opt('desig'));
   layers.wild = L.geoJSON(D.wild, opt('desig'));
   layers.wsa = L.geoJSON(D.wsa, opt('desig'));
   layers.fo = L.geoJSON(D.fo, opt('lines'));
-  layers.usfs = L.geoJSON(FS.usfs, opt('agency', { smoothFactor: 0.8 }));
-  layers.lakes = L.geoJSON(FS.lakes, opt('water'));
+
   const lakeLabels = L.layerGroup();
   FS.lakeLabels.forEach(([n, lat, lon, km2]) => L.marker([lat, lon], { pane: 'labels', interactive: false, keyboard: false,
     icon: L.divIcon({ className: '', html: `<span class="lakelabel${km2 >= 40 ? ' big' : ''}">${n}</span>`, iconSize: null, iconAnchor: [0, 0] }) }).addTo(lakeLabels));
   layers.nps = L.geoJSON(FS.nps, opt('agency'));
   const hwOrder = { st: 0, us: 1, fwy: 2 };
-  const hwFeats = FS.hwy.features.slice().sort((a, b) => hwOrder[a.properties.c] - hwOrder[b.properties.c]);
-  layers.hwyCase = L.geoJSON({ type: 'FeatureCollection', features: hwFeats.filter(f => f.properties.c !== 'st') }, opt('roads'));
-  layers.hwy = L.geoJSON({ type: 'FeatureCollection', features: hwFeats }, opt('roads'));
+
   layers.foot = L.geoJSON(RC.foot, opt('lines'));
   layers.tr = L.geoJSON(RC.trails, Object.assign(opt('trails'), { interactive: true, bubblingMouseEvents: false }));
   layers.tr.eachLayer(l => l.on('click', (e) => {
@@ -105,7 +132,7 @@
     layers.usfs.setStyle({ color: css('--usfs-edge'), weight: 0.5, fillColor: css('--usfs'), fillOpacity: 0.85 });
     layers.nps.setStyle({ color: css('--nps-edge'), weight: 1.2, fillColor: css('--nps'), fillOpacity: 0.85 });
     layers.hwyCase.setStyle({ color: css('--hwy-case'), weight: 4.5, opacity: 0.9 });
-    layers.hwy.eachLayer(l => { const c = l.feature.properties.c; l.setStyle(c === 'fwy' ? { color: css('--hwy-fwy'), weight: 2.4 } : c === 'us' ? { color: css('--hwy-us'), weight: 1.9 } : { color: css('--hwy-st'), weight: 1.1, opacity: map.getZoom() >= 7.5 ? 0.9 : 0 }); });
+    layers.hwy.eachLayer(g => g.eachLayer(l => { const c = l.feature.properties.c; l.setStyle(c === 'fwy' ? { color: css('--hwy-fwy'), weight: 2.4 } : c === 'us' ? { color: css('--hwy-us'), weight: 1.9 } : { color: css('--hwy-st'), weight: 1.1, opacity: map.getZoom() >= 7.5 ? 0.9 : 0 }); }));
     layers.tr.setStyle({ color: css('--trail'), weight: 2.6, dashArray: '1 4', lineCap: 'round' });
   }
   applyStyles();
@@ -249,18 +276,56 @@
     },
     vc: (o) => `<div class="pp"><span class="kindtag">${esc(o.k)}</span>${titleRow(o)}${o.id ? live(o) : ''}${links(o)}${coords(o.ll)}</div>`
   };
-  const recSets = { ra: RC.sites, fh: FS.fsh, fc: FS.fsc, cg: RC.camps, th: RC.th, vc: RC.info };
+  // Pins are drawn on one canvas (triangles, diamonds, circles) instead of ~1,700 separate page elements.
+  const ShapeMarker = L.CircleMarker.extend({
+    _updatePath() {
+      const r = this._renderer; if (!r._drawing || this._empty()) return;
+      const p = this._point, z = this._radius, ctx = r._ctx, sh = this.options.shape, o = this.options;
+      ctx.beginPath();
+      if (sh === 'tri') { ctx.moveTo(p.x, p.y - z); ctx.lineTo(p.x + z * 1.08, p.y + z * 0.82); ctx.lineTo(p.x - z * 1.08, p.y + z * 0.82); ctx.closePath(); }
+      else if (sh === 'dia') { ctx.moveTo(p.x, p.y - z); ctx.lineTo(p.x + z, p.y); ctx.lineTo(p.x, p.y + z); ctx.lineTo(p.x - z, p.y); ctx.closePath(); }
+      else if (sh === 'sq') { ctx.rect(p.x - z * 0.85, p.y - z * 0.85, z * 1.7, z * 1.7); }
+      else if (sh === 'split') {   // half hiking colour, half camping colour
+        ctx.globalAlpha = 1;
+        ctx.arc(p.x, p.y, z, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); ctx.fillStyle = o.fillColor; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, z, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fillStyle = o.fillColor2; ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, z, 0, Math.PI * 2); ctx.lineWidth = o.weight; ctx.strokeStyle = o.color; ctx.stroke(); return;
+      } else ctx.arc(p.x, p.y, z, 0, Math.PI * 2);
+      r._fillStroke(ctx, this);
+    }
+  });
+  const pinRenderer = L.canvas({ pane: 'rec', padding: 0.5, tolerance: 4 });
+  const pinSpec = { ra: ['circle', 7], cg: ['tri', 7.5], fc: ['tri', 7.5], th: ['dia', 6], fh: ['dia', 6], vc: ['sq', 6] };
+  let pinScale = 1;
+  function pinStyle(k, o) {
+    const ring = css('--pin-ring');
+    const fill = k === 'ra' ? (o.t === 'camp' ? css('--camp') : css('--hike')) : k === 'cg' ? css('--camp') : k === 'fc' || k === 'fh' ? css('--fscamp') : k === 'th' ? css('--hike') : css('--info');
+    return { color: ring, weight: 1.6, opacity: 1, fillColor: fill, fillColor2: css('--camp'), fillOpacity: 1, shape: k === 'ra' && o.t === 'both' ? 'split' : pinSpec[k][0] };
+  }
+  // Order matters on a canvas: later groups draw on top, so campgrounds go first and recreation areas last.
+  const recSets = { fc: FS.fsc, cg: RC.camps, fh: FS.fsh, th: RC.th, vc: RC.info, ra: RC.sites };
+  const allPins = [];
   Object.entries(recSets).forEach(([k, arr]) => {
     const g = L.layerGroup();
     arr.forEach(o => {
-      const [w, h] = sizes[k];
-      o.marker = L.marker(o.ll, { pane: 'rec', title: o.n, alt: o.n, riseOnHover: true, icon: L.divIcon({ className: '', html: svgPin[k](o.t), iconSize: [w, h], iconAnchor: [w / 2, h / 2], popupAnchor: [0, -h / 2] }) })
-        .bindPopup(() => pops[k](o), { maxWidth: Math.min(400, window.innerWidth - 48), minWidth: Math.min(360, window.innerWidth - 48), maxHeight: Math.max(320, Math.min(640, window.innerHeight - 140)) }).addTo(g);
+      o.marker = new ShapeMarker(o.ll, Object.assign({ renderer: pinRenderer, pane: 'rec', radius: pinSpec[k][1] * pinScale, bubblingMouseEvents: false }, pinStyle(k, o)))
+        .bindPopup(() => pops[k](o), { maxWidth: Math.min(400, window.innerWidth - 48), minWidth: Math.min(360, window.innerWidth - 48), maxHeight: Math.max(320, Math.min(640, window.innerHeight - 140)), offset: [0, -4] })
+        .bindTooltip(o.n, { direction: 'top', offset: [0, -8], opacity: 0.95 }).addTo(g);
+      o.marker._k = k; allPins.push(o.marker);
     });
     layers[k] = g; toggles[k] = k === 'cg' ? [g, layers.foot] : [g];
-    if (k === 'fc' || k === 'cg') g.eachLayer(m => m.setZIndexOffset(-200));
     const el = document.getElementById('lyr-' + k); setLayer(k, el.checked); el.addEventListener('change', () => setLayer(k, el.checked));
   });
+  // Smaller pins when zoomed out; recolour on theme changes
+  function sizePins() {
+    const sc = map.getZoom() < 7.5 ? 0.65 : 1;
+    if (sc === pinScale) return; pinScale = sc;
+    allPins.forEach(m => { if (!m._hl) m.setRadius(pinSpec[m._k][1] * sc); });
+  }
+  map.on('zoomend', sizePins); sizePins();
+  const recolorPins = () => Object.entries(recSets).forEach(([k, arr]) => arr.forEach(o => o.marker.setStyle(pinStyle(k, o))));
+  new MutationObserver(recolorPins).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolorPins);
   const pinIndex = new Map();
   Object.entries(recSets).forEach(([k, arr]) => { if (k !== 'vc') arr.forEach(o => o.id && pinIndex.set(o.id, { o, k })); });
   document.getElementById('cnt-ra').textContent = RC.sites.length;
@@ -701,7 +766,11 @@
     const li = ev.target.closest('[data-id]'); if (!li) return;
     const v = campIndex.get(li.dataset.id); if (v) zoomTo({ o: v.o, layer: v.k });
   });
-  const hlMarker = (id, on) => { const v = campIndex.get(id); const el = v && v.o.marker && v.o.marker.getElement(); if (el) el.classList.toggle('hl', on); };
+  const hlMarker = (id, on) => {
+    const v = campIndex.get(id), m = v && v.o.marker; if (!m) return;
+    m._hl = on; m.setRadius(pinSpec[m._k][1] * pinScale * (on ? 1.8 : 1)); m.setStyle({ weight: on ? 2.6 : 1.6, color: on ? css('--ink') : css('--pin-ring') });
+    if (on) m.bringToFront();
+  };
   listEl.addEventListener('mouseover', (ev) => { const li = ev.target.closest('[data-id]'); if (li) hlMarker(li.dataset.id, true); });
   listEl.addEventListener('mouseout', (ev) => { const li = ev.target.closest('[data-id]'); if (li && !li.contains(ev.relatedTarget)) hlMarker(li.dataset.id, false); });
   renderList();
